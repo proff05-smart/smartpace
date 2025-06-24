@@ -1,20 +1,22 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+import dj_database_url
+
+# Load environment variables from .env at the very start
+load_dotenv()
 
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Secret key for production
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'unsafe-secret-key')  # Must override in prod!
+# Secret key for production - set in your .env file for production
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'unsafe-secret-key')  # override in prod!
 
-# Do NOT run with debug in production!
-DEBUG = True
+# Debug mode (do not use True in production)
+DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() in ('true', '1', 't')
 
-import os
-
-ALLOWED_HOSTS = ['*']
-
-
+# Allowed hosts (set this more restrictively in production)
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -31,7 +33,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Required for serving static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -60,13 +62,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'smartpace.wsgi.application'
 
-# PostgreSQL database setup
-import dj_database_url
-
+# Database configuration
 DATABASES = {
     'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
 }
-
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -88,7 +87,7 @@ STATICFILES_DIRS = [BASE_DIR / 'core/static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files (User uploads, etc.)
+# Media files (user uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -96,7 +95,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/profile/dashboard/'
 
-# Security settings for production
+# Security settings - adjust based on DEBUG mode
 if DEBUG:
     CSRF_COOKIE_SECURE = False
     SESSION_COOKIE_SECURE = False
@@ -108,8 +107,6 @@ else:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-
-
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
