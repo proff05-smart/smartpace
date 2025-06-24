@@ -10,7 +10,9 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'unsafe-secret-key')  # Must overrid
 # Do NOT run with debug in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['smartpace-1k19.onrender.com']
+import os
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', os.getenv('RENDER_EXTERNAL_HOSTNAME', 'smartpace-1k19.onrender.com')]
 
 
 
