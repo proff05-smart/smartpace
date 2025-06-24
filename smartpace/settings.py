@@ -61,16 +61,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'smartpace.wsgi.application'
 
 # PostgreSQL database setup
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'smartpace_db',
-        'USER': 'smartuser',
-        'PASSWORD': 'strongpassword',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
 }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
