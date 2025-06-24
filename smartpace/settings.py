@@ -8,11 +8,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'unsafe-secret-key')  # Must override in prod!
 
 # Do NOT run with debug in production!
-DEBUG = False
+DEBUG = True
 
 import os
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', os.getenv('RENDER_EXTERNAL_HOSTNAME', 'smartpace-1k19.onrender.com')]
+ALLOWED_HOSTS = ['*']
 
 
 
@@ -97,12 +97,19 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/profile/dashboard/'
 
 # Security settings for production
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-SECURE_SSL_REDIRECT = True
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
+if DEBUG:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False
+else:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+
+
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
