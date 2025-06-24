@@ -10,7 +10,8 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'unsafe-secret-key')  # Must overrid
 # Do NOT run with debug in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.X.X']  # replace with your actual IP
+ALLOWED_HOSTS = ['smartpace-1k19.onrender.com']
+
 
 
 # Application definition
