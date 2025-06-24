@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="my-4">💵 Support SMARTPACE</h2>
+
+{% if support %}
+  <div class="card shadow p-4">
+    <p class="lead">You can support us through M-Pesa or bank transfer. Your contribution helps us grow science education!</p>
+
+    <h4 class="mt-4">📱 M-Pesa</h4>
+    <ul>
+      <li><strong>Number:</strong> {{ support.mpesa_number }}</li>
+      {% if support.paybill_number %}
+      <li><strong>Paybill:</strong> {{ support.paybill_number }}</li>
+      {% endif %}
+    </ul>
+
+    <h4 class="mt-4">🏦 Bank Details</h4>
+    <ul>
+      <li><strong>Bank Name:</strong> {{ support.bank_name }}</li>
+      <li><strong>Account Name:</strong> {{ support.account_name }}</li>
+      <li><strong>Account Number:</strong> {{ support.account_number }}</li>
+    </ul>
+
+    {% if support.message %}
+    <div class="alert alert-info mt-4">
+      <strong>💬 Message:</strong> {{ support.message }}
+    </div>
+    {% endif %}
+  </div>
+{% else %}
+  <p>No support details available at the moment.</p>
+{% endif %}
+{% endblock %}

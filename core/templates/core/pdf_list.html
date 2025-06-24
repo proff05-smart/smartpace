@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="my-4">📚 All PDFs</h2>
+
+<a href="{% url 'pdf_upload' %}" class="btn btn-success mb-3">➕ Upload New PDF</a>
+
+<div class="row">
+  {% for pdf in pdfs %}
+    <div class="col-md-6">
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">{{ pdf.title }}</h5>
+          <p class="card-text">{{ pdf.description }}</p>
+          <p><strong>📂 Category:</strong> {{ pdf.category }}</p>
+          <p><strong>👤 Uploaded by:</strong> {{ pdf.uploaded_by.username }}</p>
+          <a href="{{ pdf.file.url }}" class="btn btn-primary" download>⬇ Download PDF</a>
+          <a href="{{ pdf.file.url }}" target="_blank" class="btn btn-outline-secondary">📖 View</a>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p>No PDFs uploaded yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

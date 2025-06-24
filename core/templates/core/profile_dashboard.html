@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>👤 Your Profile</h2>
+
+<div class="card shadow p-4">
+  <div class="row">
+    <div class="col-md-3 text-center">
+      <img src="{{ profile.avatar.url }}" class="img-thumbnail mb-3" width="150">
+    </div>
+    <div class="col-md-9">
+      <h4>{{ request.user.username }}</h4>
+      <p><strong>Name:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</p>
+      <p><strong>Email:</strong> {{ request.user.email }}</p>
+      <p><strong>Bio:</strong> {{ profile.bio }}</p>
+      <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary">✏️ Edit</a>
+      <a href="{% url 'delete_account' %}" class="btn btn-danger">❌ Delete Account</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

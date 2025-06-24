@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="container my-4">
+  <h2>{{ post.title }}</h2>
+
+  <p><strong>Category:</strong> {{ post.category }}</p>
+  <p>{{ post.content }}</p>
+
+  <!-- Featured Image (16:9) -->
+  {% if post.image %}
+    <div class="ratio ratio-16x9 my-3">
+      <img src="{{ post.image.url }}" class="img-fluid rounded" alt="{{ post.title }}" style="object-fit: cover;">
+    </div>
+  {% endif %}
+
+  <!-- Featured Video (16:9) -->
+  {% if post.video_file %}
+    <div class="ratio ratio-16x9 my-3">
+      <video controls class="w-100 rounded">
+        <source src="{{ post.video_file.url }}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  {% endif %}
+
+  <!-- Media Gallery -->
+  {% if post.media.all %}
+    <h5 class="mt-4">Media</h5>
+    <div class="row g-3">
+      {% for media in post.media.all %}
+        <div class="col-md-6">
+          {% if media.image %}
+            <div class="ratio ratio-16x9">
+              <img src="{{ media.image.url }}" class="img-fluid rounded" loading="lazy" alt="Post image" style="object-fit: cover;">
+            </div>
+          {% elif media.video %}
+            <div class="ratio ratio-16x9">
+              <video controls class="w-100 rounded">
+                <source src="{{ media.video.url }}" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- YouTube Video -->
+  {% if post.youtube_url %}
+    <div class="ratio ratio-16x9 my-4">
+      <iframe src="{{ post.youtube_url|cut:'watch?v='|add:'embed/' }}" allowfullscreen class="rounded"></iframe>
+    </div>
+  {% endif %}
+
+  <!-- Author Controls -->
+  {% if request.user == post.author %}
+    <div class="my-3">
+      <a href="{% url 'edit_post' post.pk %}" class="btn btn-sm btn-warning">Edit</a>
+      <a href="{% url 'delete_post' post.pk %}" class="btn btn-sm btn-danger">Delete</a>
+    </div>
+  {% endif %}
+
+  <!-- Like Button -->
+  <form action="{% url 'like_post' post.id %}" method="POST" class="my-2">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm {% if user in post.likes.all %}btn-danger{% else %}btn-outline-danger{% endif %}">
+      ❤️ {{ post.likes.count }} Like{{ post.likes.count|pluralize }}
+    </button>
+  </form>
+
+  <!-- Comments Section -->
+  <h4 class="mt-4">Comments ({{ comments.count }})</h4>
+  {% for comment in comments %}
+    <div class="border p-2 mb-2 rounded">
+      <strong>{{ comment.user.username }}</strong> — {{ comment.created|naturaltime }}
+      <p class="mb-0">{{ comment.body }}</p>
+    </div>
+  {% empty %}
+    <p>No comments yet. Be the first!</p>
+  {% endfor %}
+
+  <!-- Comment Form -->
+  {% if user.is_authenticated %}
+    <h5 class="mt-4">Add a Comment</h5>
+    <form method="POST">
+      {% csrf_token %}
+      {{ comment_form.as_p }}
+      <button class="btn btn-primary">Submit</button>
+    </form>
+  {% else %}
+    <p><a href="{% url 'login' %}">Login</a> to comment.</p>
+  {% endif %}
+</div>
+{% endblock %}

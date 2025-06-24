@@ -1,0 +1,60 @@
+<!-- quiz/question.html -->
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <div class="card">
+    <div class="card-body">
+
+      <!-- Timer Section -->
+      <div class="alert alert-info text-center" id="timer">
+        Time left: <span id="time">60</span> seconds
+      </div>
+
+      <h5>Question {{ current }} of {{ total }}</h5>
+      <p><strong>{{ question.text }}</strong></p>
+
+      {% if question.image %}
+        <img src="{{ question.image.url }}" class="img-fluid mb-3" alt="Question Image">
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="choice" id="optionA" value="A" required>
+          <label class="form-check-label" for="optionA">A. {{ question.option_a }}</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="choice" id="optionB" value="B" required>
+          <label class="form-check-label" for="optionB">B. {{ question.option_b }}</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="choice" id="optionC" value="C" required>
+          <label class="form-check-label" for="optionC">C. {{ question.option_c }}</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="choice" id="optionD" value="D" required>
+          <label class="form-check-label" for="optionD">D. {{ question.option_d }}</label>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Submit</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Timer Script -->
+<script>
+  let timeLeft = 60;
+  const timerDisplay = document.getElementById("time");
+  const quizForm = document.querySelector("form");
+
+  const countdown = setInterval(() => {
+    timeLeft--;
+    timerDisplay.textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(countdown);
+      quizForm.submit(); // Auto-submit form
+    }
+  }, 1000);
+</script>
+{% endblock %}

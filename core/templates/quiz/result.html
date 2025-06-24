@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <h2 class="mb-3 text-success">✅ Quiz Complete</h2>
+      <p><strong>Category:</strong> {{ category.name }}</p>
+      <p><strong>Your Score:</strong> {{ score }} out of {{ total }}</p>
+
+      <h4 class="mt-4">📘 Answers & Explanations</h4>
+      <ul class="list-group">
+        {% for a in answers %}
+          <li class="list-group-item">
+            <strong>Q{{ forloop.counter }}:</strong>
+            Your answer: {{ a.selected }} | Correct: {{ a.correct }}
+            {% if a.selected != a.correct %}
+              <br><em class="text-danger">{{ a.explanation }}</em>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

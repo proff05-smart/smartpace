@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+
+      <h2 class="text-center mb-4">🏆 Quiz Leaderboard</h2>
+
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>User</th>
+            <th>Total Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in leaderboard %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ user.user__username }}</td>
+              <td>{{ user.total_score }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="3" class="text-center">No quiz attempts yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
