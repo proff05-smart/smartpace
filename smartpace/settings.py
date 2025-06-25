@@ -15,8 +15,8 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'unsafe-secret-key')  # override in 
 # Debug mode (do not use True in production)
 DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() in ('true', '1', 't')
 
-# Allowed hosts (set this more restrictively in production)
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',')
+
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -26,6 +26,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
+
 
     'django.contrib.humanize',
     'core',
@@ -33,7 +35,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # for static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # for static filesa
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -64,8 +66,12 @@ WSGI_APPLICATION = 'smartpace.wsgi.application'
 
 # Database configuration
 DATABASES = {
-    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
