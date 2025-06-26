@@ -17,7 +17,7 @@ db.sqlite3
 # Virtual environments
 venv/
 env/
-.smart/
+smart/
 *.egg-info/
 
 # IDEs
