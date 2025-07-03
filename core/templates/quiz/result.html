@@ -1,26 +1,137 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container mt-4">
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <h2 class="mb-3 text-success">✅ Quiz Complete</h2>
-      <p><strong>Category:</strong> {{ category.name }}</p>
-      <p><strong>Your Score:</strong> {{ score }} out of {{ total }}</p>
 
-      <h4 class="mt-4">📘 Answers & Explanations</h4>
-      <ul class="list-group">
-        {% for a in answers %}
-          <li class="list-group-item">
-            <strong>Q{{ forloop.counter }}:</strong>
-            Your answer: {{ a.selected }} | Correct: {{ a.correct }}
-            {% if a.selected != a.correct %}
-              <br><em class="text-danger">{{ a.explanation }}</em>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
+  <!-- Header -->
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">Quiz Results</h2>
+    <p class="lead">You scored <strong>{{ score }}/{{ total }}</strong> ({{ percentage }}%)</p>
+    <h5 class="text-success">{{ remarks }}</h5>
+    {% if time_taken %}
+      <p class="text-muted">⏱ Time Taken: <strong>{{ time_taken }}</strong></p>
+    {% endif %}
+  </div>
+
+  <!-- Print/Download Button -->
+  <div class="text-end mb-3">
+    <button onclick="window.print()" class="btn btn-outline-primary">
+      <i class="bi bi-printer"></i> Print / Download
+    </button>
+  </div>
+
+  <!-- Chart -->
+  <div class="d-flex justify-content-center mb-5">
+    <div style="max-width: 250px;">
+      <canvas id="resultChart"></canvas>
     </div>
   </div>
+
+  <!-- Questions & Answers -->
+  <div class="row row-cols-1 row-cols-md-2 g-4">
+    {% for ans in answers %}
+    <div class="col">
+      <div class="card shadow-sm h-100 border">
+        <div class="card-body">
+          <h5 class="card-title">Question {{ forloop.counter }}</h5>
+          <p class="card-text fs-5">{{ ans.text }}</p>
+
+          <p class="card-text fw-semibold fs-6">
+            Your answer:
+            {% if ans.selected %}
+              {% if ans.selected == ans.correct %}
+                <span class="text-success">{{ ans.selected }} ✔️</span>
+              {% else %}
+                <span class="text-danger">{{ ans.selected }} ❌</span><br>
+                <small class="text-muted">Correct: <strong>{{ ans.correct }}</strong></small>
+              {% endif %}
+            {% else %}
+              <span class="text-warning">No answer selected ❗</span><br>
+              <small class="text-muted">Correct: <strong>{{ ans.correct }}</strong></small>
+            {% endif %}
+          </p>
+
+          {% if ans.explanation %}
+          <div class="mt-3">
+            <h6 class="fw-bold text-info">Explanation:</h6>
+            <p class="text-dark fs-6">{{ ans.explanation }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Go Back Home Button -->
+  <div class="text-center mt-5">
+    <a href="{% url 'home' %}" class="btn btn-primary">
+      <i class="bi bi-house-door-fill"></i> Go Back Home
+    </a>
+  </div>
+
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const correct = {{ score }};
+  const total = {{ total }};
+  const incorrect = total - correct;
+
+  const ctx = document.getElementById('resultChart').getContext('2d');
+  const resultChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Correct', 'Incorrect'],
+      datasets: [{
+        data: [correct, incorrect],
+        backgroundColor: ['#28a745', '#dc3545'],
+        hoverOffset: 10
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: {
+              size: 14
+            }
+          }
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  @media print {
+    .btn, nav, footer {
+      display: none !important;
+    }
+    .card {
+      page-break-inside: avoid;
+    }
+  }
+
+  .card-title {
+    font-size: 1.2rem;
+    color: #007bff;
+  }
+
+  .card-text {
+    font-size: 1rem;
+  }
+
+  .text-success, .text-danger, .text-warning {
+    font-weight: bold;
+  }
+
+  canvas {
+    max-width: 100%;
+  }
+</style>
 {% endblock %}

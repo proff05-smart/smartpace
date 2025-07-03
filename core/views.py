@@ -35,6 +35,10 @@ from .forms import PostForm
 
 
 
+
+
+
+
 # Register user
 def register_view(request):
     if request.method == 'POST':
@@ -164,10 +168,25 @@ def like_post_view(request, pk):
 
 
 
+from django.core.paginator import Paginator
+from datetime import date
+
 def homepage_view(request):
     settings = SiteSettings.objects.first()
-    categories = QuizCategory.objects.all()[:4] 
-    posts = Post.objects.order_by('-created')[:3] 
+    categories = QuizCategory.objects.all()[:4]
+    
+    # Get all posts ordered by created date (descending)
+    all_posts = Post.objects.order_by('-created')
+    
+    # Setup paginator: 3 posts per page (change number as you like)
+    paginator = Paginator(all_posts, 6)
+    
+    # Get current page number from URL GET param ?page=
+    page_number = request.GET.get('page')
+    
+    # Get posts for the current page
+    posts = paginator.get_page(page_number)
+    
     quiz_categories = QuizCategory.objects.all()
     today = date.today()
     daily_fact = DailyFact.objects.filter(date=today).first()
@@ -175,11 +194,11 @@ def homepage_view(request):
     return render(request, 'core/home.html', {
         'settings': settings,
         'categories': categories,
-        'posts': posts,
+        'posts': posts,          # posts is now a Page object, not a QuerySet
         'quiz_categories': quiz_categories,
         'daily_fact': daily_fact
-
     })
+
 
 
 
@@ -298,47 +317,174 @@ def quiz_question(request):
         return redirect('quiz_question')
 
     return render(request, 'quiz/question.html', {'question': question, 'current': quiz['current'] + 1, 'total': len(quiz['question_ids'])})
-
 @login_required
 def quiz_result(request):
     quiz = request.session.pop('quiz', None)
     if not quiz:
         return redirect('quiz_category_list')
 
-    category = QuizCategory.objects.get(id=quiz['category_id'])
+    category = get_object_or_404(QuizCategory, id=quiz['category_id'])
+    total_questions = len(quiz['question_ids'])
+    score = quiz['score']
+    percentage = (score / total_questions) * 100 if total_questions > 0 else 0
 
+    # Badge logic
+    if percentage >= 90:
+        remarks, badge, badge_class, emoji = (
+            "🏅 Excellent work! You're a quiz champion! 🎉 Keep shining!",
+            "Gold Medal", "badge bg-warning text-dark", "🥇"
+        )
+    elif percentage >= 70:
+        remarks, badge, badge_class, emoji = (
+            "👍 Great job! You're on the right path! ✨",
+            "Silver Medal", "badge bg-secondary", "🥈"
+        )
+    elif percentage >= 50:
+        remarks, badge, badge_class, emoji = (
+            "🙂 Good effort! Keep learning and growing! 📚",
+            "Bronze Medal", "badge bg-info text-dark", "🥉"
+        )
+    else:
+        remarks, badge, badge_class, emoji = (
+            "😕 Don't worry, practice makes perfect! 💪 You got this!",
+            "No Badge", "badge bg-danger", "❌"
+        )
+
+    # Save quiz result
     QuizResult.objects.create(
         user=request.user,
         category=category,
-        score=quiz['score']
+        score=score,
+        percentage=percentage,
+        total_questions=total_questions,
+        total=total_questions,
     )
 
+    # Prepare question data for the template
+    question_ids = [ans['id'] for ans in quiz['answers']]
+    questions = Question.objects.in_bulk(question_ids)
+
+    question_texts = []
+    for ans in quiz['answers']:
+        question = questions.get(ans['id'])
+        if question:
+            question_texts.append({
+                'text': question.text,
+                'selected': ans['selected'],
+                'correct': ans['correct'],
+                'explanation': ans['explanation']
+            })
+
+    quiz_title = f"Quiz Results for {category.name}"
+
     return render(request, 'quiz/result.html', {
-        'score': quiz['score'],
-        'total': len(quiz['question_ids']),
-        'answers': quiz['answers'],
-        'category': category
+        'score': score,
+        'total': total_questions,
+        'percentage': percentage,
+        'remarks': remarks,
+        'badge': badge,
+        'badge_class': badge_class,
+        'emoji': emoji,
+        'answers': question_texts,
+        'category': category,
+        'total_questions': total_questions,
+        'quiz_title': quiz_title,
     })
 
 
 
-from django.db.models import Sum
+
+from django.shortcuts import render
+from django.db.models import Sum, Count
 from django.contrib.auth.models import User
 
 def quiz_leaderboard(request):
+    # Aggregate total score and total attempts per user
     leaderboard = (
-        QuizResult.objects
-        .values('user__username')
-        .annotate(total_score=Sum('score'))
-        .order_by('-total_score')[:10]  
+        User.objects
+        .filter(quizresult__isnull=False)  # users who attempted quiz
+        .annotate(
+            total_score=Sum('quizresult__score'),
+            attempts=Count('quizresult')
+        )
+        .order_by('-total_score', 'username')  # best score first, then alphabetically
     )
-    return render(request, 'quiz/leaderboard.html', {'leaderboard': leaderboard})
 
+    # Define badges and emojis for top 5 ranks
+    badges = [
+        ("🥇", "Gold"),
+        ("🥈", "Silver"),
+        ("🥉", "Bronze"),
+        ("🏅", "Top 4"),
+        ("🎖️", "Top 5"),
+    ]
 
-@login_required
+    # Annotate badge and emoji based on rank
+    leaderboard_with_badges = []
+    for idx, user in enumerate(leaderboard, start=1):
+        badge = ''
+        emoji = ''
+        if idx <= 5:
+            emoji, badge = badges[idx - 1]
+        leaderboard_with_badges.append({
+            'rank': idx,
+            'username': user.username,
+            'avatar_url': user.profile.avatar.url if hasattr(user, 'profile') and user.profile.avatar else '/static/img/avatar-placeholder.png',
+            'total_score': user.total_score,
+            'attempts': user.attempts,
+            'badge': badge,
+            'emoji': emoji,
+        })
+
+    context = {
+        'leaderboard': leaderboard_with_badges,
+    }
+    return render(request, 'quiz/leaderboard.html', context)
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
+from django.core.paginator import Paginator
+
+from django.core.paginator import Paginator
+
 def quiz_history(request):
-    attempts = QuizResult.objects.filter(user=request.user).order_by('-taken_at')
-    return render(request, 'quiz/history.html', {'attempts': attempts})
+    raw_history = QuizResult.objects.filter(user=request.user).order_by('-date_taken')
+    paginator = Paginator(raw_history, 10)  # 10 attempts per page
+    page_number = request.GET.get('page')
+    history_page = paginator.get_page(page_number)
+
+    formatted_history = []
+    for attempt in history_page:
+        percentage = (attempt.score / attempt.total_questions) * 100 if attempt.total_questions else 0
+        total_seconds = attempt.time_used_seconds or 0
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        formatted_history.append({
+            'date_taken': attempt.date_taken,
+            'category__name': attempt.category.name,
+            'score': attempt.score,
+            'total_questions': attempt.total_questions,
+            'percentage': percentage,
+            'minutes': minutes,
+            'seconds': seconds,
+        })
+
+    # Pass the paginated page object but with formatted data
+    history_page.object_list = formatted_history
+
+    return render(request, 'quiz/history.html', {'history': history_page})
+
+
+
+
+
 
 
 
@@ -414,3 +560,25 @@ def post_list(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'core/post_list.html', {'page_obj': page_obj})
+
+
+# views.py
+from django.contrib.auth.models import User
+from .utils import is_user_online
+
+def online_users_view(request):
+    users = User.objects.all()
+    online_users = [user for user in users if is_user_online(user)]
+    return render(request, 'online_users.html', {'online_users': online_users})
+
+
+from django.contrib.auth.models import User
+from django.shortcuts import render
+from datetime import timedelta
+from django.utils import timezone
+
+def is_user_online(user):
+    profile = getattr(user, 'userprofile', None)
+    if profile:
+        return timezone.now() - profile.last_activity < timedelta(minutes=5)
+    return False
