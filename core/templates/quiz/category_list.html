@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4 text-center">🧪 Choose Quiz Category</h2>
+  <div class="row g-4 justify-content-center">
+
+    {% for cat in categories %}
+    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+      <div class="card text-center h-100 shadow-sm rounded category-card"
+           style="cursor:pointer;">
+        <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+          <div style="font-size: 3rem;">🧬</div>  
+          <h5 class="card-title mt-3">{{ cat.name }}</h5>
+          <a href="{% url 'start_quiz' cat.id %}" class="btn btn-primary mt-3">
+            <i class="bi bi-play-fill"></i> Start Quiz
+          </a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+      <p class="text-center text-muted">No quiz categories available.</p>
+    {% endfor %}
+
+  </div>
+</div>
+
+<style>
+  /* Glow pulse on hover */
+  @keyframes glowPulse {
+    0%, 100% {
+      box-shadow: 0 0 5px 2px rgba(0, 123, 255, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 15px 5px rgba(0, 123, 255, 1);
+    }
+  }
+
+  .category-card:hover {
+    animation: glowPulse 2s infinite;
+    transform: translateY(-5px);
+    transition: transform 0.3s ease;
+  }
+</style>
+{% endblock %}

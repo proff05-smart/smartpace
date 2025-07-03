@@ -1,0 +1,9 @@
+<!-- templates/online_users.html -->
+<h2>Online Users</h2>
+<ul>
+  {% for user in online_users %}
+    <li>{{ user.username }}</li>
+  {% empty %}
+    <li>No users online.</li>
+  {% endfor %}
+</ul>
