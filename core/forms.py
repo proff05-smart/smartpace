@@ -73,3 +73,13 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['bio', 'photo', 'followers']
+
+
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['body']
+        widgets = {
+            'body': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+        }

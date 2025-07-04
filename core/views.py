@@ -32,6 +32,9 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from .models import Post
 from .forms import PostForm
+from xhtml2pdf import pisa
+
+
 
 
 
@@ -582,3 +585,141 @@ def is_user_online(user):
     if profile:
         return timezone.now() - profile.last_activity < timedelta(minutes=5)
     return False
+
+
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Post, Comment
+from .forms import CommentForm
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def add_comment(request, post_id, parent_id=None):
+    post = get_object_or_404(Post, id=post_id)
+    parent_comment = Comment.objects.filter(id=parent_id).first() if parent_id else None
+
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            reply = form.save(commit=False)
+            reply.user = request.user
+            reply.post = post
+            reply.parent = parent_comment
+            reply.save()
+            #return redirect('post_detail', post_id=post.id)
+            return redirect('post_detail_view', pk=post.id)
+
+    else:
+        form = CommentForm()
+
+    return render(request, 'blog/comment_form.html', {'form': form})
+
+@login_required
+def like_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    if request.user in comment.likes.all():
+        comment.likes.remove(request.user)
+    else:
+        comment.likes.add(request.user)
+    return redirect('post_detail_view', pk=comment.post.id)
+
+
+
+
+#edit
+
+def post_detail_view(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    top_level_comments = post.comments.filter(parent__isnull=True)
+    
+    context = {
+        'post': post,
+        'top_level_comments': top_level_comments,
+        'top_level_comment_count': top_level_comments.count(),
+    }
+    return render(request, 'core/post_detail.html', context)
+
+
+#edit
+
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+
+def download_post_pdf(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    template_path = 'core/post_pdf.html'
+    context = {'post': post}
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="post_{post_id}.pdf"'
+    template = get_template(template_path)
+    html = template.render(context)
+
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse('We had some errors <pre>' + html + '</pre>')
+    return response
+
+
+#new
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from .models import Comment
+from .forms import CommentForm
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id, user=request.user)
+
+    if request.method == 'POST':
+        form = CommentForm(request.POST, instance=comment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Comment updated successfully.')
+            return redirect('post_detail', pk=comment.post.id)  # ✅ FIXED
+    else:
+        form = CommentForm(instance=comment)
+
+    return render(request, 'core/edit_comment.html', {'form': form, 'comment': comment})
+
+
+
+@login_required
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id, user=request.user)
+    post_id = comment.post.id
+    comment.delete()
+    messages.success(request, 'Comment deleted.')
+    return redirect('post_detail', pk=post_id)  # ✅ FIXED
+
+
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.models import User
+
+
+
+def user_profile(request, username):
+    profile_user = get_object_or_404(User, username=username)
+    user_posts = Post.objects.filter(author=profile_user, status='published').order_by('-created_at')
+    quiz_attempts = QuizResult.objects.filter(user=profile_user).order_by('-date')  # adjust as per your model
+
+    return render(request, 'user_profile.html', {
+        'profile_user': profile_user,
+        'user_posts': user_posts,
+        'quiz_attempts': quiz_attempts,
+    })
+
+
+from .models import Notification
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def notifications_view(request):
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'core/notifications.html', {'notifications': notifications})
+
+
+
+from django.contrib.auth.decorators import login_required
+
+#
