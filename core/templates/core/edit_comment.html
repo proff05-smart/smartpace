@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <h4>Edit Comment</h4>
+  <form method="POST">
+    {% csrf_token %}
+    {{ form.body }}
+    <button type="submit" class="btn btn-primary mt-2">Save</button>
+    <a href="{% url 'post_detail' comment.post.id %}" class="btn btn-secondary mt-2">Cancel</a>
+  </form>
+</div>
+{% endblock %}

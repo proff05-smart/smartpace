@@ -1,0 +1,27 @@
+<!-- core/templates/core/post_pdf.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ post.title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .post-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .post-content {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="post-title">{{ post.title }}</div>
+    <div class="post-content">
+        {{ post.content|safe }}
+    </div>
+</body>
+</html>
