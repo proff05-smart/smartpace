@@ -2,11 +2,10 @@ from django.contrib import admin
 from .models import (
     Profile, Category, Comment, Announcement, DailyQuote,
     Document, PostMedia, Post, SiteSettings, PDFDocument,
-    Profile, SupportInfo, QuizCategory, Question, QuizResult,DailyFact
+    SupportInfo, QuizCategory, Question, QuizResult, DailyFact
 )
 
-# Register basic models
-
+# Register other models
 admin.site.register(Category)
 admin.site.register(Comment)
 admin.site.register(Announcement)
@@ -19,19 +18,15 @@ admin.site.register(SiteSettings)
 admin.site.register(PDFDocument)
 admin.site.register(Profile)
 admin.site.register(SupportInfo)
+admin.site.register(DailyFact)
 
-# Custom admin for Post with media inlines
+# Inline and custom admin
 class PostMediaInline(admin.TabularInline):
     model = PostMedia
     extra = 1
 
+@admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     inlines = [PostMediaInline]
-
-admin.site.register(Post, PostAdmin)
-
-
-
-
-
-admin.site.register(DailyFact)
+    list_display = ('title', 'is_pinned', 'status')
+    list_editable = ('is_pinned',)

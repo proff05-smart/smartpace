@@ -1,45 +1,35 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .forms import RegisterForm, ProfileForm
-from .models import Profile
-from .models import Post, PostMedia, Category
-from .forms import PostForm, PostMediaFormSet
-from django.contrib.auth.decorators import login_required
-from .models import SupportInfo
-from .models import Post, Comment
-from .forms import CommentForm
-from django.http import HttpResponseRedirect
+from datetime import date, timedelta
+import random
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponseForbidden
 from django.urls import reverse
-from .models import SiteSettings
-from .models import PDFDocument
-from .forms import PDFUploadForm
-from django.contrib.auth.decorators import login_required
-from .models import Profile
-from .forms import UserForm, UserProfileForm
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import QuizCategory, Question, QuizResult
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-import random
+from django.core.paginator import Paginator
+from django.db.models import Sum, Count
 from django.utils import timezone
-from datetime import date
-from .models import DailyFact
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
-from .models import Post
-from .forms import PostForm
+
 from xhtml2pdf import pisa
 
+# Models
+from .models import (
+    Profile, Post, Comment, Category, PostMedia,
+    SupportInfo, SiteSettings, PDFDocument,
+    QuizCategory, Question, QuizResult,
+    DailyFact, Notification
+)
 
+# Forms
+from .forms import (
+    RegisterForm, ProfileForm, UserForm, UserProfileForm,
+    PostForm, PostMediaFormSet, CommentForm, PDFUploadForm
+)
 
-
-
-
-
+# Utilities
+from .utils import is_user_online
 
 
 # Register user
@@ -120,22 +110,29 @@ def post_create_view(request):
         'media_formset': media_formset
     })
 
+from django.core.paginator import Paginator
+
 def post_list_view(request):
     query = request.GET.get('q')
     posts = Post.objects.all().order_by('-created')
 
     if query:
-        posts = posts.filter(title__icontains=query)  
+        posts = posts.filter(title__icontains=query)
 
-    return render(request, 'core/post_list.html', {'posts': posts})
+    paginator = Paginator(posts, 6)  # Show 6 posts per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'core/post_list.html', {
+        'posts': page_obj,  # Use this in template
+        'page_obj': page_obj
+    })
 
 
-def post_detail_view(request, pk):
+
+def post_detail(request, pk):
     post = Post.objects.get(id=pk)
     return render(request, 'core/post_detail.html', {'post': post})
-
-
-
 
 def post_detail_view(request, pk):
     post = Post.objects.get(id=pk)
@@ -159,6 +156,7 @@ def post_detail_view(request, pk):
         'comments': comments
     })
 
+
 @login_required
 def like_post_view(request, pk):
     post = Post.objects.get(id=pk)
@@ -169,42 +167,23 @@ def like_post_view(request, pk):
     return redirect('post_detail', pk=pk)
 
 
-
-
-from django.core.paginator import Paginator
-from datetime import date
-
 def homepage_view(request):
     settings = SiteSettings.objects.first()
-    categories = QuizCategory.objects.all()[:4]
-    
-    # Get all posts ordered by created date (descending)
+    categories = QuizCategory.objects.all()[:4]    
     all_posts = Post.objects.order_by('-created')
-    
-    # Setup paginator: 3 posts per page (change number as you like)
-    paginator = Paginator(all_posts, 6)
-    
-    # Get current page number from URL GET param ?page=
+    paginator = Paginator(all_posts, 6)   
     page_number = request.GET.get('page')
-    
-    # Get posts for the current page
-    posts = paginator.get_page(page_number)
-    
+    posts = paginator.get_page(page_number)    
     quiz_categories = QuizCategory.objects.all()
     today = date.today()
     daily_fact = DailyFact.objects.filter(date=today).first()
-
     return render(request, 'core/home.html', {
         'settings': settings,
         'categories': categories,
-        'posts': posts,          # posts is now a Page object, not a QuerySet
+        'posts': posts,          
         'quiz_categories': quiz_categories,
         'daily_fact': daily_fact
     })
-
-
-
-
 
 def pdf_list_view(request):
     pdfs = PDFDocument.objects.order_by('-uploaded_at')
@@ -223,20 +202,26 @@ def pdf_upload_view(request):
         form = PDFUploadForm()
     return render(request, 'core/pdf_upload.html', {'form': form})
 
-
-
-
-
-
 @login_required
 def profile_dashboard(request):
-    profile = request.user.userprofile
-    return render(request, 'core/profile_dashboard.html', {'profile': profile})
+    user = request.user
+    profile = user.profile
+    user_posts = Post.objects.filter(author=user)
+    quiz_attempts = user.quizresult_set.all().order_by('-taken_at')
+
+    return render(request, 'core/profile_dashboard.html', {
+        'profile_user': user,
+        'profile': profile,
+        'user_posts': user_posts,
+        'quiz_result': quiz_attempts,
+    })
+
+
 
 @login_required
 def edit_profile(request):
     user = request.user
-    profile = user.userprofile
+    profile = user.profile
     if request.method == 'POST':
         user_form = UserForm(request.POST, instance=user)
         profile_form = UserProfileForm(request.POST, request.FILES, instance=profile)
@@ -259,17 +244,9 @@ def delete_account(request):
         return redirect('home')
     return render(request, 'core/delete_account.html')
 
-
-
-
-
 def support_view(request):
     support = SupportInfo.objects.first() 
     return render(request, 'core/support.html', {'support': support})
-
-
-
-
 
 @login_required
 def quiz_category_list(request):
@@ -395,25 +372,17 @@ def quiz_result(request):
     })
 
 
-
-
-from django.shortcuts import render
-from django.db.models import Sum, Count
-from django.contrib.auth.models import User
-
 def quiz_leaderboard(request):
-    # Aggregate total score and total attempts per user
     leaderboard = (
         User.objects
-        .filter(quizresult__isnull=False)  # users who attempted quiz
+        .filter(quizresult__isnull=False)  
         .annotate(
             total_score=Sum('quizresult__score'),
             attempts=Count('quizresult')
         )
-        .order_by('-total_score', 'username')  # best score first, then alphabetically
+        .order_by('-total_score', 'username')  
     )
 
-    # Define badges and emojis for top 5 ranks
     badges = [
         ("🥇", "Gold"),
         ("🥈", "Silver"),
@@ -422,7 +391,7 @@ def quiz_leaderboard(request):
         ("🎖️", "Top 5"),
     ]
 
-    # Annotate badge and emoji based on rank
+   
     leaderboard_with_badges = []
     for idx, user in enumerate(leaderboard, start=1):
         badge = ''
@@ -443,19 +412,6 @@ def quiz_leaderboard(request):
         'leaderboard': leaderboard_with_badges,
     }
     return render(request, 'quiz/leaderboard.html', context)
-
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-
-from django.core.paginator import Paginator
-
-from django.core.paginator import Paginator
 
 def quiz_history(request):
     raw_history = QuizResult.objects.filter(user=request.user).order_by('-date_taken')
@@ -479,19 +435,10 @@ def quiz_history(request):
             'seconds': seconds,
         })
 
-    # Pass the paginated page object but with formatted data
     history_page.object_list = formatted_history
 
     return render(request, 'quiz/history.html', {'history': history_page})
 
-
-
-
-
-
-
-
-from django.shortcuts import render
 
 def search_view(request):
     query = request.GET.get('q')
@@ -503,9 +450,7 @@ def search_view(request):
     return render(request, 'core/search_results.html', {'query': query, 'results': results})
 
 
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from .forms import PostForm
+
 
 @login_required
 def add_post(request):
@@ -520,13 +465,9 @@ def add_post(request):
         form = PostForm()
     return render(request, 'blog/add_post.html', {'form': form})
 
-
-
-
 @login_required
 def edit_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
-
     if post.author != request.user:
         return HttpResponseForbidden("You are not allowed to edit this post.")
 
@@ -557,7 +498,7 @@ def delete_post(request, pk):
 from django.core.paginator import Paginator
 def post_list(request):
     posts = Post.objects.filter(status='published').order_by('-created_at')
-    paginator = Paginator(posts, 6)  # Show 6 posts per page
+    paginator = Paginator(posts, 6) 
 
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -565,20 +506,13 @@ def post_list(request):
     return render(request, 'core/post_list.html', {'page_obj': page_obj})
 
 
-# views.py
-from django.contrib.auth.models import User
-from .utils import is_user_online
-
 def online_users_view(request):
     users = User.objects.all()
     online_users = [user for user in users if is_user_online(user)]
     return render(request, 'online_users.html', {'online_users': online_users})
 
 
-from django.contrib.auth.models import User
-from django.shortcuts import render
-from datetime import timedelta
-from django.utils import timezone
+
 
 def is_user_online(user):
     profile = getattr(user, 'userprofile', None)
@@ -587,31 +521,28 @@ def is_user_online(user):
     return False
 
 
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Post, Comment
-from .forms import CommentForm
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def add_comment(request, post_id, parent_id=None):
     post = get_object_or_404(Post, id=post_id)
-    parent_comment = Comment.objects.filter(id=parent_id).first() if parent_id else None
+    parent_comment = None
+
+    if parent_id:
+        parent_comment = get_object_or_404(Comment, id=parent_id)
 
     if request.method == 'POST':
         form = CommentForm(request.POST)
         if form.is_valid():
-            reply = form.save(commit=False)
-            reply.user = request.user
-            reply.post = post
-            reply.parent = parent_comment
-            reply.save()
-            #return redirect('post_detail', post_id=post.id)
-            return redirect('post_detail_view', pk=post.id)
-
+            new_comment = form.save(commit=False)
+            new_comment.post = post
+            new_comment.user = request.user
+            new_comment.parent = parent_comment
+            new_comment.save()
+            return redirect('post_detail', pk=post_id)
     else:
         form = CommentForm()
 
-    return render(request, 'blog/comment_form.html', {'form': form})
+    return render(request, 'post_detail.html', {'form': form, 'post': post})
 
 @login_required
 def like_comment(request, comment_id):
@@ -620,30 +551,36 @@ def like_comment(request, comment_id):
         comment.likes.remove(request.user)
     else:
         comment.likes.add(request.user)
-    return redirect('post_detail_view', pk=comment.post.id)
-
-
-
-
+    return redirect('post_detail', pk=comment.post.id)
 #edit
+
+
 
 def post_detail_view(request, pk):
     post = get_object_or_404(Post, pk=pk)
-    top_level_comments = post.comments.filter(parent__isnull=True)
-    
+    comments = Comment.objects.filter(post=post).order_by('-created')
+    top_level_comments = comments.filter(parent=None)
+    comment_form = CommentForm()
+
+    if request.method == 'POST':
+        comment_form = CommentForm(request.POST)
+        if comment_form.is_valid():
+            new_comment = comment_form.save(commit=False)
+            new_comment.post = post
+            new_comment.user = request.user
+            new_comment.approved = True  # Make sure it's set before saving
+            new_comment.save()
+            return redirect('post_detail', pk=pk)
+
     context = {
         'post': post,
+        'comments': comments,
         'top_level_comments': top_level_comments,
         'top_level_comment_count': top_level_comments.count(),
+        'comment_form': comment_form,
     }
+
     return render(request, 'core/post_detail.html', context)
-
-
-#edit
-
-from django.http import HttpResponse
-from django.template.loader import get_template
-from xhtml2pdf import pisa
 
 def download_post_pdf(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
@@ -659,14 +596,6 @@ def download_post_pdf(request, post_id):
         return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
 
-
-#new
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from .models import Comment
-from .forms import CommentForm
-from django.contrib.auth.decorators import login_required
-
 @login_required
 def edit_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id, user=request.user)
@@ -676,13 +605,11 @@ def edit_comment(request, comment_id):
         if form.is_valid():
             form.save()
             messages.success(request, 'Comment updated successfully.')
-            return redirect('post_detail', pk=comment.post.id)  # ✅ FIXED
+            return redirect('post_detail', pk=comment.post.id)  
     else:
         form = CommentForm(instance=comment)
 
     return render(request, 'core/edit_comment.html', {'form': form, 'comment': comment})
-
-
 
 @login_required
 def delete_comment(request, comment_id):
@@ -690,36 +617,135 @@ def delete_comment(request, comment_id):
     post_id = comment.post.id
     comment.delete()
     messages.success(request, 'Comment deleted.')
-    return redirect('post_detail', pk=post_id)  # ✅ FIXED
-
-
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.models import User
-
-
+    return redirect('post_detail', pk=post_id)  
 
 def user_profile(request, username):
     profile_user = get_object_or_404(User, username=username)
-    user_posts = Post.objects.filter(author=profile_user, status='published').order_by('-created_at')
-    quiz_attempts = QuizResult.objects.filter(user=profile_user).order_by('-date')  # adjust as per your model
+    user_posts = Post.objects.filter(author=profile_user, status='published').order_by('-created')
+    quiz_attempts = QuizResult.objects.filter(user=profile_user).order_by('-date_taken')  
 
-    return render(request, 'user_profile.html', {
+    return render(request, 'core/user_profile.html', {
         'profile_user': profile_user,
         'user_posts': user_posts,
         'quiz_attempts': quiz_attempts,
     })
 
 
+def reply_to_comment(request, comment_id):
+   
+    Notification.objects.create(
+        user=original_comment.user,
+        message=f"{request.user.username} replied to your comment.",
+        url=f"/post/{post.slug}#comment-{reply.id}",
+        tone='reply_sound.mp3'
+    )
+
+
+def notifications(request):
+    return render(request, 'notifications.html')
+
+def is_root(self):
+    return self.parent is None
+
+
+# admin_views.py
+def user_analytics(request):
+    user_data = User.objects.annotate(
+        total_quizzes=Count('userquizhistory'),
+        most_played=Subquery(...)
+    )
+    return render(request, 'admin/user_analytics.html', {'data': user_data})
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.urls import reverse
 from .models import Notification
-from django.contrib.auth.decorators import login_required
 
+
+# =============================
+# 🔔 UNREAD NOTIFICATIONS (JSON)
+# =============================
 @login_required
-def notifications_view(request):
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'core/notifications.html', {'notifications': notifications})
+def unread_notifications_json(request):
+    """
+    Return unread notifications as JSON for AJAX/live notifications.
+    """
+    notifications = Notification.objects.filter(user=request.user, is_read=False).select_related('sender', 'post')
+    
+    data = []
+    for n in notifications:
+        message = f"{n.sender.username} {n.verb} your post '{n.post.title if n.post else ''}'"
+        url = n.post.get_absolute_url() if n.post else '#'
+        data.append({
+            'id': n.id,
+            'message': message,
+            'url': url,
+            'tone': n.tone,
+        })
+        notifications.update(is_read=True)
+
+    return JsonResponse(data, safe=False)
 
 
+# =============================
+# 📥 UNREAD NOTIFICATIONS (HTML)
+# =============================
+@login_required
+def unread_notifications(request):
+    """
+    Display and auto-mark all unread notifications as read.
+    """
+    notifications = Notification.objects.filter(user=request.user, is_read=False).select_related('sender', 'post')
+    
+    # Mark them as read after displaying
+    notifications.update(is_read=True)
 
-from django.contrib.auth.decorators import login_required
+    return render(request, 'notifications/unread.html', {'notifications': notifications})
 
-#
+
+# =============================
+# 📚 ALL NOTIFICATIONS (Read + Unread)
+# =============================
+@login_required
+def all_notifications(request):
+    """
+    Show all notifications ordered by date.
+    """
+    notifications = Notification.objects.filter(user=request.user).select_related('sender', 'post').order_by('-created_at')
+    return render(request, 'notifications/all.html', {'notifications': notifications})
+
+
+# =============================
+# ☑️ MARK SINGLE NOTIFICATION AS READ
+# =============================
+@login_required
+def mark_notification_as_read(request, notification_id):
+    """
+    Mark a specific notification as read and redirect to related post or fallback.
+    """
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification.is_read = True
+    notification.save()
+
+    redirect_url = notification.post.get_absolute_url() if notification.post else reverse('unread_notifications')
+    return redirect(redirect_url)
+
+
+# =============================
+# 🧹 MARK ALL AS READ (Button)
+# =============================
+@login_required
+def mark_all_notifications_as_read(request):
+    """
+    Mark all unread notifications as read.
+    """
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return redirect('unread_notifications')
+
+def quiz_list_view(request):
+    # logic here
+    return render(request, 'quiz/quiz_list.html')
+
+

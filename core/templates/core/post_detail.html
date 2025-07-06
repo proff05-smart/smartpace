@@ -1,127 +1,157 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
 {% load humanize %}
 {% load widget_tweaks %}
 
+
 {% block content %}
 <div class="container mt-5">
+  
+  <!-- 🔹 Post Title -->
+  <h2 class="fw-bold">{{ post.title }}</h2>
 
-  <!-- Post Title -->
-  <h2 class="mb-3">{{ post.title }}</h2>
-
-  <!-- Post Metadata -->
-  <p class="text-muted">
-    By <strong>{{ post.author }}</strong> | {{ post.created_at|date:"F j, Y" }} |
+  <!-- 🔹 Metadata with profile photo and role badge -->
+  <p class="text-muted d-flex align-items-center gap-2">
+    By
+    <a href="{% url 'user_profile' post.author.username %}" class="d-flex align-items-center text-decoration-none text-reset">
+      <img src="{% if post.author.profile.photo %}{{ post.author.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
+           alt="{{ post.author.username }}'s photo" class="rounded-circle" style="width:35px; height:35px; object-fit:cover; margin-right:8px;">
+      <strong>{{ post.author.username }}</strong>
+      {% if post.author.profile.role %}
+        {% with role=post.author.profile.role|lower %}
+          <span class="badge rounded-pill px-3 py-1 ms-2 text-white
+            {% if role == 'teacher' %}bg-primary
+            {% elif role == 'admin' %}bg-danger
+            {% elif role == 'student' %}bg-success
+            {% else %}bg-secondary
+            {% endif %}">
+            {{ post.author.profile.role }}
+          </span>
+        {% endwith %}
+      {% endif %}
+    </a>
+    |
+    {{ post.created_at|date:"F j, Y" }} |
     {{ post.category.name }}
+    {% if post.updated_at > post.created_at %}
+      <small class="text-muted">(Updated {{ post.updated_at|naturaltime }})</small>
+    {% endif %}
   </p>
 
-  <!-- Post Image -->
+  <!-- 🔹 Post Image -->
   {% if post.image %}
-    <img src="{{ post.image.url }}" alt="{{ post.title }}" class="img-fluid mb-3 rounded">
+    <img src="{{ post.image.url }}" class="img-fluid rounded mb-4" alt="{{ post.title }}">
   {% endif %}
 
-  <!-- Post Content -->
-  <div class="mb-4">
+  <!-- 🔹 Post Content -->
+  <div class="mb-5">
     {{ post.content|linebreaks }}
   </div>
 
-  <!-- Edit/Delete Buttons (Author only) -->
+  <!-- 🔹 Post Actions -->
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <form method="post" action="{% url 'like_post' post.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if user in post.likes.all %}btn-success{% else %}btn-outline-success{% endif %}">
+        👍 Like ({{ post.total_likes }})
+      </button>
+    </form>
+    <button onclick="window.print()" class="btn btn-outline-secondary">🖨️ Print</button>
+    <a href="{% url 'download_post_pdf' post.pk %}" class="btn btn-outline-primary">📥 Download PDF</a>
+  </div>
+
+  <!-- 🔹 Edit/Delete (Author Only) -->
   {% if user == post.author %}
-    <div class="mb-4 d-flex gap-2">
-      <a href="{% url 'edit_post' post.pk %}" class="btn btn-warning">✏️ Edit</a>
-      <a href="{% url 'delete_post' post.pk %}" class="btn btn-danger"
-         onclick="return confirm('Are you sure you want to delete this post?')">🗑️ Delete</a>
+    <div class="mb-4">
+      <a href="{% url 'edit_post' post.pk %}" class="btn btn-warning btn-sm">✏️ Edit</a>
+      <a href="{% url 'delete_post' post.pk %}" class="btn btn-danger btn-sm"
+         onclick="return confirm('Delete this post?')">🗑️ Delete</a>
     </div>
   {% endif %}
 
-  <!-- Like Button -->
-  <form method="POST" action="{% url 'like_post' post.pk %}">
-    {% csrf_token %}
-    <button type="submit" class="btn {% if user in post.likes.all %}btn-success{% else %}btn-outline-success{% endif %}">
-      👍 Like ({{ post.total_likes }})
-    </button>
-  </form>
-
-  <!-- Print / Download -->
-  <div class="my-4 d-flex gap-2">
-    <button onclick="window.print()" class="btn btn-outline-secondary">🖨️ Print</button>
-    <a href="{% url 'download_post_pdf' post.id %}" class="btn btn-outline-primary">📥 Download PDF</a>
-  </div>
-
   <hr>
 
-  <!-- 💬 Leave a Comment -->
-  <div class="mb-4">
-    <h5>💬 Leave a Comment</h5>
-    <form method="POST" action="{% url 'add_comment' post.id %}">
-      {% csrf_token %}
-      {{ comment_form.body|add_class:"form-control" }}
-      <button type="submit" class="btn btn-primary mt-2">Submit Comment</button>
-    </form>
-  </div>
+  <!-- 💬 Comment Form -->
+  <h5>💬 Leave a Comment</h5>
+  <form method="post" action="{% url 'add_comment' post.pk %}" class="mb-4">
+    {% csrf_token %}
+    <div class="mb-3">
+      {{ comment_form.body|add_class:"form-control"|attr:"rows:3"|attr:"placeholder:Write your comment..." }}
+      {% for error in comment_form.body.errors %}
+        <div class="text-danger">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Submit Comment</button>
+  </form>
 
   <!-- 💬 Comments Section -->
-  <h4>💬 Post Comments ({{ top_level_comment_count }})</h4>
-
+  <h5 class="mt-5">Comments ({{ top_level_comments.count }})</h5>
   {% for comment in top_level_comments %}
-    <div class="mb-3 p-3 border rounded bg-light">
-      <div class="d-flex align-items-start">
-        <img src="{% if comment.user.profile.profile_pic %}{{ comment.user.profile.profile_pic.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
-             class="rounded-circle me-3" width="50" height="50" alt="Avatar">
+    <div class="border rounded p-3 mb-3 bg-light">
+      <div class="d-flex">
+        <a href="{% url 'user_profile' comment.user.username %}">
+          <img src="{% if comment.user.profile.photo %}{{ comment.user.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
+               class="rounded-circle me-3" width="35" height="35" alt="{{ comment.user.username }}">
+        </a>
+        <div>
+          <p class="mb-1 d-flex align-items-center gap-2">
+            <a href="{% url 'user_profile' comment.user.username %}" class="text-decoration-none fw-bold">
+              {{ comment.user.username }}
+            </a>
 
-        <div class="w-100">
-          <p class="mb-1">
-            <strong>{{ comment.user.username }}</strong> — {{ comment.created|naturaltime }}
-            <span class="badge bg-secondary float-end">{{ comment.replies.count }} Replies</span>
+            {% if comment.user.profile.role %}
+              {% with role=comment.user.profile.role|lower %}
+                <span class="badge rounded-pill px-3 py-1 text-white
+                  {% if role == 'teacher' %}bg-primary
+                  {% elif role == 'admin' %}bg-danger
+                  {% elif role == 'student' %}bg-success
+                  {% else %}bg-secondary
+                  {% endif %}">
+                  {{ comment.user.profile.role }}
+                </span>
+              {% endwith %}
+            {% endif %}
+
+            <small class="text-muted">• {{ comment.created|naturaltime }}</small>
           </p>
           <p>{{ comment.body }}</p>
 
-          <!-- Like Comment -->
-          <form method="POST" action="{% url 'like_comment' comment.id %}" class="d-inline">
+          <!-- Likes & Controls -->
+          <form method="post" action="{% url 'like_comment' comment.id %}" class="d-inline">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm {% if user in comment.likes.all %}btn-success{% else %}btn-outline-success{% endif %}">
               👍 {{ comment.total_likes }}
             </button>
           </form>
 
-          <!-- Edit/Delete (Author only) -->
           {% if user == comment.user %}
             <a href="{% url 'edit_comment' comment.id %}" class="btn btn-sm btn-warning">Edit</a>
             <a href="{% url 'delete_comment' comment.id %}" class="btn btn-sm btn-danger"
-               onclick="return confirm('Are you sure you want to delete this comment?')">Delete</a>
+               onclick="return confirm('Delete this comment?')">Delete</a>
           {% endif %}
 
-          <!-- Reply Toggle -->
+          <!-- Reply Form Toggle -->
           <a class="btn btn-sm btn-link" data-bs-toggle="collapse" href="#replyForm{{ comment.id }}">Reply</a>
 
           <!-- Reply Form -->
-          <div id="replyForm{{ comment.id }}" class="collapse mt-2">
-            <form method="POST" action="{% url 'reply_comment' post.id comment.id %}">
+          <div class="collapse mt-2" id="replyForm{{ comment.id }}">
+            <form method="post" action="{% url 'reply_comment' post.pk comment.id %}">
               {% csrf_token %}
               <textarea name="body" class="form-control" rows="2" placeholder="Write your reply..." required></textarea>
               <button type="submit" class="btn btn-sm btn-primary mt-2">Submit Reply</button>
             </form>
           </div>
 
+          <!-- 🔁 Reply Count -->
+          {% with comment.replies.count as reply_count %}
+            {% if reply_count > 0 %}
+              <p class="text-muted small mt-2">{{ reply_count }} repl{% if reply_count > 1 %}ies{% else %}y{% endif %}</p>
+            {% endif %}
+          {% endwith %}
+
           <!-- Replies -->
           {% for reply in comment.replies.all %}
-            <div class="ms-4 mt-3 d-flex align-items-start">
-              <img src="{% if reply.user.profile.profile_pic %}{{ reply.user.profile.profile_pic.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
-                   class="rounded-circle me-2" width="40" height="40" alt="Avatar">
-
-              <div class="bg-white p-2 rounded border w-100">
-                <p class="mb-1">
-                  <strong>{{ reply.user.username }}</strong> — {{ reply.created|naturaltime }}
-                </p>
-                <p class="mb-0">{{ reply.body }}</p>
-
-                {% if user == reply.user %}
-                  <a href="{% url 'edit_comment' reply.id %}" class="btn btn-sm btn-warning">Edit</a>
-                  <a href="{% url 'delete_comment' reply.id %}" class="btn btn-sm btn-danger"
-                     onclick="return confirm('Are you sure you want to delete this reply?')">Delete</a>
-                {% endif %}
-              </div>
-            </div>
+            {% include "comment_tree.html" with comment=reply post=post user=user %}
           {% endfor %}
         </div>
       </div>
@@ -130,28 +160,38 @@
     <p>No comments yet. Be the first to comment!</p>
   {% endfor %}
 
-  <!-- Pagination -->
-  <div class="mt-4">
+  <!-- 🔹 Pagination -->
+  {% if is_paginated %}
     <nav>
       <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+          </li>
         {% endif %}
-        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
         {% if page_obj.has_next %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+          </li>
         {% endif %}
       </ul>
     </nav>
-  </div>
+  {% endif %}
 
   <!-- 📚 Related Posts -->
   {% if related_posts %}
     <h5 class="mt-5">📚 Related Posts</h5>
     <div class="row">
       {% for related in related_posts %}
-        <div class="col-md-4">
-          <div class="card mb-3">
+        <div class="col-md-4 mb-3">
+          <div class="card h-100 shadow-sm">
             {% if related.image %}
               <img src="{{ related.image.url }}" class="card-img-top" alt="{{ related.title }}">
             {% endif %}
@@ -166,4 +206,21 @@
   {% endif %}
 
 </div>
+
+<!-- 🖨️ Print Styling -->
+<style>
+  @media print {
+    nav, form, .btn, .collapse, .pagination {
+      display: none !important;
+    }
+    body {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  }
+  a.d-flex.align-items-center.text-decoration-none.text-reset:hover {
+    text-decoration: none;
+    opacity: 0.8;
+  }
+</style>
 {% endblock %}

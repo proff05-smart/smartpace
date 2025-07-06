@@ -1,0 +1,13 @@
+<div class="comment p-3 border rounded mb-3">
+  <strong>{{ comment.user.username }}</strong> 
+  <span class="text-muted small">{{ comment.created_at|date:"M d, Y H:i" }}</span>
+  <p class="mt-2">{{ comment.body }}</p>
+
+  {% if comment.replies.all %}
+    <div class="ms-4 mt-3 border-start ps-3">
+      {% for reply in comment.replies.all %}
+        {% include "includes/render_comment.html" with comment=reply %}
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
