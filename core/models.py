@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django.urls import reverse
+
 
 
 class Profile(models.Model):
@@ -14,6 +16,11 @@ class Profile(models.Model):
     avatar = models.ImageField(upload_to='avatars/', default='avatars/default.png', blank=True)
     followers = models.ManyToManyField('self', symmetrical=False, blank=True)
     last_activity = models.DateTimeField(default=timezone.now)
+    role = models.CharField(
+        max_length=20,
+        choices=[('Student', 'Student'), ('Teacher', 'Teacher'), ('Admin', 'Admin')],
+        default='Student'
+    )
 
     def __str__(self):
         return self.user.username
@@ -45,15 +52,20 @@ class Post(models.Model):
     likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
     created = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
+    is_pinned = models.BooleanField(default= False)
+   
+
 
     class Meta:
-        ordering = ['-created']
+        ordering = ['-created', '-is_pinned']
 
     def __str__(self):
         return self.title
 
     def total_likes(self):
         return self.likes.count()
+    def get_absolute_url(self):
+        return reverse('post_detail', kwargs={'pk': self.pk})
 
 
 
@@ -67,14 +79,15 @@ class Comment(models.Model):
     approved = models.BooleanField(default=True)
     likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)
 
-    def __str__(self):
-        return f'Comment by {self.author} on {self.post}'
+    #def __str__(self):
+       # return f'Comment by {self.author} on {self.post}'
 
     def __str__(self):
         return f"{self.user.username} - {self.post.title}"
 
     def total_likes(self):
         return self.likes.count()
+   
 
 
 
@@ -119,6 +132,7 @@ class Question(models.Model):
 
 class QuizResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    quiz = models.ForeignKey('Quiz', on_delete=models.CASCADE, null=True, blank=True) 
     category = models.ForeignKey(QuizCategory, on_delete=models.CASCADE)
     score = models.IntegerField()
     total = models.IntegerField()
@@ -174,22 +188,6 @@ class PDFDocument(models.Model):
 
 
 
-#class UserProfile(models.Model):
- #   user = models.OneToOneField(User, on_delete=models.CASCADE)
-  #  bio = models.TextField(blank=True, null=True)
-   # avatar = models.ImageField(upload_to='avatars/', default='avatars/default.png')
-
-    #def __str__(self):
-     #   return f"{self.user.username}'s Profile"
-
-
-#@receiver(post_save, sender=User)
-#def create_user_profile(sender, instance, created, **kwargs):
- #   if created:
-  #      UserProfile.objects.create(user=instance)
-
-
-
 class SupportInfo(models.Model):
     mpesa_number = models.CharField(max_length=20, help_text="e.g. 0712345678")
     paybill_number = models.CharField(max_length=20, blank=True, null=True)
@@ -212,14 +210,46 @@ class DailyFact(models.Model):
         return f"Fact for {self.date}"
 
 
-from django.db import models
-from django.contrib.auth.models import User
+
+### to edit 
+from django.utils.timezone import now
 
 class Notification(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    message = models.CharField(max_length=255)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')  # Receiver
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_notifications')  # Actor
+    verb = models.CharField(max_length=255)  # e.g., "liked", "commented on"
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, null=True, blank=True)
+    comment = models.ForeignKey('Comment', on_delete=models.CASCADE, null=True, blank=True)
     is_read = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(default=now)
+    tone = models.CharField(max_length=20, choices=[('info', 'Info'), ('success', 'Success'), ('warning', 'Warning'), ('danger', 'Danger')], default='info')
+
+    def __str__(self):
+        return f"{self.sender} {self.verb} your post"
+
+    class Meta:
+        ordering = ['-timestamp']  # show newest first
+
+
+
+
+
+
+
+
+
+class UserQuizHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(QuizCategory, on_delete=models.CASCADE)
+    score = models.FloatField()
+    time_taken = models.DurationField()
+    taken_on = models.DateTimeField(auto_now_add=True)
+
+
+class Quiz(models.Model):
+    title = models.CharField(max_length=200)
+    category = models.ForeignKey(QuizCategory, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.message[:30]}"
+        return self.title
