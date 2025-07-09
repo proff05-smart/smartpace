@@ -27,6 +27,9 @@ urlpatterns = [
     path('comment/add/', views.add_comment, name='add_comment'),
     path('comment/<int:comment_id>/replies/', views.load_replies, name='load_replies'),
     path('like-reply/', views.like_reply, name='like-reply'),
+    # urls.py
+    path('profile/<str:username>/', views.user_profile, name='user_profile'),
+
 
 
 

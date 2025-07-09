@@ -8,16 +8,6 @@
 {% load youtube_tags %} 
 
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>My Page</title>
-</head>
-<body>
-    <img src="{% static 'images/default.jpg' %}" alt="Default Image">
-</body>
-</html>
 
 <div class="container mt-4">
 
@@ -48,12 +38,7 @@
     <span>• Category: <em>{{ post.category.name }}</em></span>
   </div>
 
-<!-- 🔹 Post Image -->
-{% if post.image %}
-  <img src="{{ post.image.url }}" alt="{{ post.title }}" class="img-fluid mb-3">
-{% else %}
-  <img src="{% static 'images/default.jpg' %}" alt="Default Image" class="img-fluid mb-3">
-{% endif %}
+
 
 <!-- 🔹 Post Video -->
 {% if post.youtube_url %}
@@ -90,10 +75,6 @@
 
 
 
-{% for form in media_formset %}
-  {{ form.image.label_tag }} {{ form.image }}
-  {{ form.video.label_tag }} {{ form.video }}
-{% endfor %}
 
 
   <!-- 🔹 Actions -->
@@ -222,8 +203,6 @@
 {% empty %}
   <p>No comments yet. Be the first to comment below.</p>
 {% endfor %}       
-
-{% endblock %}
   <!-- 📚 Related Posts -->
   {% if related_posts %}
     <h5 class="mt-5">📚 Related Posts</h5>
@@ -249,6 +228,8 @@
   {% endif %}
 
 </div>
+{% endblock %}
+
 
 
 {% block extra_css %}
@@ -277,7 +258,5 @@
     });
   });
 </script>
-
-
 
 {% endblock %}

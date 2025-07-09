@@ -2,11 +2,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Quiz Leaderboard</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-<style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz Leaderboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
     body {
         background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
         min-height: 100vh;
@@ -27,12 +27,6 @@
         font-weight: 700;
         color: #343a40;
     }
-    table {
-        width: 100%;
-    }
-    th, td {
-        vertical-align: middle !important;
-    }
     .avatar {
         width: 48px;
         height: 48px;
@@ -50,8 +44,8 @@
     .badge.Gold { background-color: #FFD700; }
     .badge.Silver { background-color: #C0C0C0; }
     .badge.Bronze { background-color: #CD7F32; }
-    .badge['Top 4'] { background-color: #007bff; }
-    .badge['Top 5'] { background-color: #6f42c1; }
+    .badge.Top4 { background-color: #007bff; }
+    .badge.Top5 { background-color: #6f42c1; }
     .no-badge {
         color: #6c757d;
         font-weight: 600;
@@ -65,7 +59,7 @@
             padding: 1rem;
         }
     }
-</style>
+  </style>
 </head>
 <body>
 <div class="leaderboard-container">
@@ -85,14 +79,22 @@
             <tr>
                 <td><strong>{{ user.rank }}</strong></td>
                 <td>
-                    <img src="{{ user.avatar_url }}" alt="{{ user.username }} avatar" class="avatar me-2" />
-                    {{ user.username }}
-                </td>
+    <a href="{% url 'user_profile' user.username %}">
+    <img src="{{ user.photo_url }}" alt="{{ user.username }} photo" class="avatar me-2" />
+</a>
+<a href="{% url 'user_profile' user.username %}" class="text-dark text-decoration-none">
+    {{ user.username }}
+</a>
+
+</td>
+
                 <td>{{ user.attempts }}</td>
                 <td>{{ user.total_score }}</td>
                 <td>
                     {% if user.badge %}
-                        <span class="badge {{ user.badge }}">{{ user.emoji }} {{ user.badge }}</span>
+                        <span class="badge {{ user.badge }}" title="{{ user.badge }}">
+                            {{ user.emoji }} {{ user.badge }}
+                        </span>
                     {% else %}
                         <span class="no-badge">-</span>
                     {% endif %}

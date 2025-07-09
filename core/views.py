@@ -405,7 +405,8 @@ def quiz_result(request):
             "quiz_title": quiz_title,
         },
     )
-
+from django.db.models import Sum, Count
+from django.contrib.auth.models import User
 
 def quiz_leaderboard(request):
     leaderboard = (
@@ -418,8 +419,8 @@ def quiz_leaderboard(request):
         ("🥇", "Gold"),
         ("🥈", "Silver"),
         ("🥉", "Bronze"),
-        ("🏅", "Top 4"),
-        ("🎖️", "Top 5"),
+        ("🏅", "Top4"),
+        ("🎖️", "Top5"),
     ]
 
     leaderboard_with_badges = []
@@ -428,26 +429,28 @@ def quiz_leaderboard(request):
         emoji = ""
         if idx <= 5:
             emoji, badge = badges[idx - 1]
-        leaderboard_with_badges.append(
-            {
-                "rank": idx,
-                "username": user.username,
-                "avatar_url": (
-                    user.profile.avatar.url
-                    if hasattr(user, "profile") and user.profile.avatar
-                    else "/static/img/avatar-placeholder.png"
-                ),
-                "total_score": user.total_score,
-                "attempts": user.attempts,
-                "badge": badge,
-                "emoji": emoji,
-            }
-        )
 
-    context = {
-        "leaderboard": leaderboard_with_badges,
-    }
-    return render(request, "quiz/leaderboard.html", context)
+        # Use `photo` instead of `avatar`
+        photo_url = "/static/img/avatar-placeholder.png"
+        if hasattr(user, "profile") and getattr(user.profile, "photo", None):
+            try:
+                photo_url = user.profile.photo.url
+            except:
+                pass
+
+        leaderboard_with_badges.append({
+            "rank": idx,
+            "username": user.username,
+            "photo_url": photo_url,
+            "total_score": user.total_score,
+            "attempts": user.attempts,
+            "badge": badge,
+            "emoji": emoji,
+        })
+
+    return render(request, "quiz/leaderboard.html", {"leaderboard": leaderboard_with_badges})
+
+
 
 
 def quiz_history(request):
