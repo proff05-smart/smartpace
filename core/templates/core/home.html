@@ -2,6 +2,14 @@
 {% load static %}
 
 {% block content %}
+
+<!-- templates/post_detail.html -->
+<h1>{{ post.title }}</h1>
+
+<img src="{{ post.image.url }}" class="img-fluid mb-3" alt="{{ post.title }}">
+
+<p>{{ post.content }}</p>
+python3
 <div class="container my-5">
 
   <!-- ✅ Welcome Banner -->
