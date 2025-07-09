@@ -75,6 +75,12 @@
       Your browser does not support the video tag.
     </video>
   {% endif %}
+  {% elif post.video %}
+    {# Cloudinary or other direct video file #}
+    <video width="100%" controls class="mb-3">
+      <source src="{{ post.video.url }}" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
 {% endif %}
 
 <!-- 🔹 Post Content -->

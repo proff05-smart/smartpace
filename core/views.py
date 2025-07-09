@@ -18,16 +18,30 @@ from django.http import HttpResponse
 
 # Models
 from .models import (
-    Profile, Post, Comment, Category, PostMedia,
-    SupportInfo, SiteSettings, PDFDocument,
-    QuizCategory, Question, QuizResult,
-    DailyFact, Notification
+    Profile,
+    Post,
+    Comment,
+    Category,
+    PostMedia,
+    SupportInfo,
+    SiteSettings,
+    PDFDocument,
+    QuizCategory,
+    Question,
+    QuizResult,
+    DailyFact,
+    Notification,
 )
 
 # Forms
 from .forms import (
-    RegisterForm, ProfileForm, UserForm, UserProfileForm,
-    PostForm,  CommentForm, PDFUploadForm
+    RegisterForm,
+    ProfileForm,
+    UserForm,
+    UserProfileForm,
+    PostForm,
+    CommentForm,
+    PDFUploadForm,
 )
 
 # Utilities
@@ -36,99 +50,105 @@ from .utils import is_user_online
 
 # Register user
 def register_view(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
             Profile.objects.create(user=user)  # Create empty profile
-            messages.success(request, 'Account created successfully.')
-            return redirect('login')
+            messages.success(request, "Account created successfully.")
+            return redirect("login")
     else:
         form = RegisterForm()
-    return render(request, 'core/register.html', {'form': form})
+    return render(request, "core/register.html", {"form": form})
+
 
 # Login user
 def login_view(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
+    if request.method == "POST":
+        username = request.POST["username"]
+        password = request.POST["password"]
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
             login(request, user)
-            return redirect('home')
+            return redirect("home")
         else:
-            messages.error(request, 'Invalid credentials')
-    return render(request, 'core/login.html')
+            messages.error(request, "Invalid credentials")
+    return render(request, "core/login.html")
+
 
 # Logout user
 def logout_view(request):
     logout(request)
-    return redirect('login')
+    return redirect("login")
+
 
 # Profile page
 @login_required
 def profile_view(request):
     profile = request.user.profile
-    if request.method == 'POST':
+    if request.method == "POST":
         form = ProfileForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Profile updated.')
-            return redirect('profile')
+            messages.success(request, "Profile updated.")
+            return redirect("profile")
     else:
         form = ProfileForm(instance=profile)
-    return render(request, 'core/profile.html', {'form': form})
-
-
+    return render(request, "core/profile.html", {"form": form})
 
 
 @login_required
 def post_create_view(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         post_form = PostForm(request.POST)
-        media_formset = PostMediaFormSet(request.POST, request.FILES, queryset=PostMedia.objects.none())
-        
+        media_formset = PostMediaFormSet(
+            request.POST, request.FILES, queryset=PostMedia.objects.none()
+        )
+
         if post_form.is_valid() and media_formset.is_valid():
             post = post_form.save(commit=False)
             post.author = request.user
             post.save()
-            
+
             for form in media_formset.cleaned_data:
                 if form:
                     PostMedia.objects.create(
-                        post=post,
-                        image=form.get('image'),
-                        video=form.get('video')
+                        post=post, image=form.get("image"), video=form.get("video")
                     )
-            messages.success(request, 'Post created!')
-            return redirect('home')
+            messages.success(request, "Post created!")
+            return redirect("home")
     else:
         post_form = PostForm()
         media_formset = PostMediaFormSet(queryset=PostMedia.objects.none())
-    
-    return render(request, 'core/post_create.html', {
-        'post_form': post_form,
-        'media_formset': media_formset
-    })
+
+    return render(
+        request,
+        "core/post_create.html",
+        {"post_form": post_form, "media_formset": media_formset},
+    )
+
 
 from django.core.paginator import Paginator
 
+
 def post_list_view(request):
-    query = request.GET.get('q')
-    posts = Post.objects.all().order_by('-created')
+    query = request.GET.get("q")
+    posts = Post.objects.all().order_by("-created")
 
     if query:
         posts = posts.filter(title__icontains=query)
 
     paginator = Paginator(posts, 6)  # Show 6 posts per page
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'core/post_list.html', {
-        'posts': page_obj,  # Use this in template
-        'page_obj': page_obj
-    })
+    return render(
+        request,
+        "core/post_list.html",
+        {"posts": page_obj, "page_obj": page_obj},  # Use this in template
+    )
+
 
 @login_required
 def like_post_view(request, pk):
@@ -137,170 +157,206 @@ def like_post_view(request, pk):
         post.likes.remove(request.user)
     else:
         post.likes.add(request.user)
-    return redirect('post_detail', pk=pk)
+    return redirect("post_detail", pk=pk)
 
 
 def homepage_view(request):
     settings = SiteSettings.objects.first()
-    categories = QuizCategory.objects.all()[:4]    
-    all_posts = Post.objects.order_by('-created')
-    paginator = Paginator(all_posts, 6)   
-    page_number = request.GET.get('page')
-    posts = paginator.get_page(page_number)    
+    categories = QuizCategory.objects.all()[:4]
+    all_posts = Post.objects.order_by("-created")
+    paginator = Paginator(all_posts, 6)
+    page_number = request.GET.get("page")
+    posts = paginator.get_page(page_number)
     quiz_categories = QuizCategory.objects.all()
     today = date.today()
     daily_fact = DailyFact.objects.filter(date=today).first()
-    return render(request, 'core/home.html', {
-        'settings': settings,
-        'categories': categories,
-        'posts': posts,          
-        'quiz_categories': quiz_categories,
-        'daily_fact': daily_fact
-    })
+    return render(
+        request,
+        "core/home.html",
+        {
+            "settings": settings,
+            "categories": categories,
+            "posts": posts,
+            "quiz_categories": quiz_categories,
+            "daily_fact": daily_fact,
+        },
+    )
+
 
 def pdf_list_view(request):
-    pdfs = PDFDocument.objects.order_by('-uploaded_at')
-    return render(request, 'core/pdf_list.html', {'pdfs': pdfs})
+    pdfs = PDFDocument.objects.order_by("-uploaded_at")
+    return render(request, "core/pdf_list.html", {"pdfs": pdfs})
+
 
 @login_required
 def pdf_upload_view(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = PDFUploadForm(request.POST, request.FILES)
         if form.is_valid():
             pdf = form.save(commit=False)
             pdf.uploaded_by = request.user
             pdf.save()
-            return redirect('pdf_list')
+            return redirect("pdf_list")
     else:
         form = PDFUploadForm()
-    return render(request, 'core/pdf_upload.html', {'form': form})
+    return render(request, "core/pdf_upload.html", {"form": form})
+
 
 @login_required
 def profile_dashboard(request):
     user = request.user
     profile = user.profile
     user_posts = Post.objects.filter(author=user)
-    quiz_attempts = user.quizresult_set.all().order_by('-taken_at')
+    quiz_attempts = user.quizresult_set.all().order_by("-taken_at")
 
-    return render(request, 'core/profile_dashboard.html', {
-        'profile_user': user,
-        'profile': profile,
-        'user_posts': user_posts,
-        'quiz_result': quiz_attempts,
-    })
-
+    return render(
+        request,
+        "core/profile_dashboard.html",
+        {
+            "profile_user": user,
+            "profile": profile,
+            "user_posts": user_posts,
+            "quiz_result": quiz_attempts,
+        },
+    )
 
 
 @login_required
 def edit_profile(request):
     user = request.user
     profile = user.profile
-    if request.method == 'POST':
+    if request.method == "POST":
         user_form = UserForm(request.POST, instance=user)
         profile_form = UserProfileForm(request.POST, request.FILES, instance=profile)
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
-            return redirect('profile_dashboard')
+            return redirect("profile_dashboard")
     else:
         user_form = UserForm(instance=user)
         profile_form = UserProfileForm(instance=profile)
-    return render(request, 'core/edit_profile.html', {
-        'user_form': user_form,
-        'profile_form': profile_form
-    })
+    return render(
+        request,
+        "core/edit_profile.html",
+        {"user_form": user_form, "profile_form": profile_form},
+    )
+
 
 @login_required
 def delete_account(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         request.user.delete()
-        return redirect('home')
-    return render(request, 'core/delete_account.html')
+        return redirect("home")
+    return render(request, "core/delete_account.html")
+
 
 def support_view(request):
-    support = SupportInfo.objects.first() 
-    return render(request, 'core/support.html', {'support': support})
+    support = SupportInfo.objects.first()
+    return render(request, "core/support.html", {"support": support})
+
 
 @login_required
 def quiz_category_list(request):
     categories = QuizCategory.objects.all()
-    return render(request, 'quiz/category_list.html', {'categories': categories})
+    return render(request, "quiz/category_list.html", {"categories": categories})
+
 
 @login_required
 def start_quiz(request, category_id):
     category = QuizCategory.objects.get(id=category_id)
     questions = list(Question.objects.filter(category=category))
-    selected_questions = random.sample(questions, min(len(questions), 10)) 
+    selected_questions = random.sample(questions, min(len(questions), 10))
 
-    request.session['quiz'] = {
-        'category_id': category.id,
-        'question_ids': [q.id for q in selected_questions],
-        'current': 0,
-        'score': 0,
-        'answers': [],
-        'start_time': timezone.now().isoformat()
+    request.session["quiz"] = {
+        "category_id": category.id,
+        "question_ids": [q.id for q in selected_questions],
+        "current": 0,
+        "score": 0,
+        "answers": [],
+        "start_time": timezone.now().isoformat(),
     }
 
-    return redirect('quiz_question')
+    return redirect("quiz_question")
+
 
 @login_required
 def quiz_question(request):
-    quiz = request.session.get('quiz')
-    if not quiz or quiz['current'] >= len(quiz['question_ids']):
-        return redirect('quiz_result')
+    quiz = request.session.get("quiz")
+    if not quiz or quiz["current"] >= len(quiz["question_ids"]):
+        return redirect("quiz_result")
 
-    question_id = quiz['question_ids'][quiz['current']]
+    question_id = quiz["question_ids"][quiz["current"]]
     question = Question.objects.get(id=question_id)
 
-    if request.method == 'POST':
-        selected = request.POST.get('choice')
+    if request.method == "POST":
+        selected = request.POST.get("choice")
         correct = question.correct_answer
 
         is_correct = selected == correct
-        quiz['score'] += 1 if is_correct else 0
-        quiz['answers'].append({
-            'id': question.id,
-            'selected': selected,
-            'correct': correct,
-            'explanation': question.explanation
-        })
-        quiz['current'] += 1
-        request.session['quiz'] = quiz
+        quiz["score"] += 1 if is_correct else 0
+        quiz["answers"].append(
+            {
+                "id": question.id,
+                "selected": selected,
+                "correct": correct,
+                "explanation": question.explanation,
+            }
+        )
+        quiz["current"] += 1
+        request.session["quiz"] = quiz
 
-        return redirect('quiz_question')
+        return redirect("quiz_question")
 
-    return render(request, 'quiz/question.html', {'question': question, 'current': quiz['current'] + 1, 'total': len(quiz['question_ids'])})
+    return render(
+        request,
+        "quiz/question.html",
+        {
+            "question": question,
+            "current": quiz["current"] + 1,
+            "total": len(quiz["question_ids"]),
+        },
+    )
+
+
 @login_required
 def quiz_result(request):
-    quiz = request.session.pop('quiz', None)
+    quiz = request.session.pop("quiz", None)
     if not quiz:
-        return redirect('quiz_category_list')
+        return redirect("quiz_category_list")
 
-    category = get_object_or_404(QuizCategory, id=quiz['category_id'])
-    total_questions = len(quiz['question_ids'])
-    score = quiz['score']
+    category = get_object_or_404(QuizCategory, id=quiz["category_id"])
+    total_questions = len(quiz["question_ids"])
+    score = quiz["score"]
     percentage = (score / total_questions) * 100 if total_questions > 0 else 0
 
     # Badge logic
     if percentage >= 90:
         remarks, badge, badge_class, emoji = (
             "🏅 Excellent work! You're a quiz champion! 🎉 Keep shining!",
-            "Gold Medal", "badge bg-warning text-dark", "🥇"
+            "Gold Medal",
+            "badge bg-warning text-dark",
+            "🥇",
         )
     elif percentage >= 70:
         remarks, badge, badge_class, emoji = (
             "👍 Great job! You're on the right path! ✨",
-            "Silver Medal", "badge bg-secondary", "🥈"
+            "Silver Medal",
+            "badge bg-secondary",
+            "🥈",
         )
     elif percentage >= 50:
         remarks, badge, badge_class, emoji = (
             "🙂 Good effort! Keep learning and growing! 📚",
-            "Bronze Medal", "badge bg-info text-dark", "🥉"
+            "Bronze Medal",
+            "badge bg-info text-dark",
+            "🥉",
         )
     else:
         remarks, badge, badge_class, emoji = (
             "😕 Don't worry, practice makes perfect! 💪 You got this!",
-            "No Badge", "badge bg-danger", "❌"
+            "No Badge",
+            "badge bg-danger",
+            "❌",
         )
 
     # Save quiz result
@@ -314,46 +370,48 @@ def quiz_result(request):
     )
 
     # Prepare question data for the template
-    question_ids = [ans['id'] for ans in quiz['answers']]
+    question_ids = [ans["id"] for ans in quiz["answers"]]
     questions = Question.objects.in_bulk(question_ids)
 
     question_texts = []
-    for ans in quiz['answers']:
-        question = questions.get(ans['id'])
+    for ans in quiz["answers"]:
+        question = questions.get(ans["id"])
         if question:
-            question_texts.append({
-                'text': question.text,
-                'selected': ans['selected'],
-                'correct': ans['correct'],
-                'explanation': ans['explanation']
-            })
+            question_texts.append(
+                {
+                    "text": question.text,
+                    "selected": ans["selected"],
+                    "correct": ans["correct"],
+                    "explanation": ans["explanation"],
+                }
+            )
 
     quiz_title = f"Quiz Results for {category.name}"
 
-    return render(request, 'quiz/result.html', {
-        'score': score,
-        'total': total_questions,
-        'percentage': percentage,
-        'remarks': remarks,
-        'badge': badge,
-        'badge_class': badge_class,
-        'emoji': emoji,
-        'answers': question_texts,
-        'category': category,
-        'total_questions': total_questions,
-        'quiz_title': quiz_title,
-    })
+    return render(
+        request,
+        "quiz/result.html",
+        {
+            "score": score,
+            "total": total_questions,
+            "percentage": percentage,
+            "remarks": remarks,
+            "badge": badge,
+            "badge_class": badge_class,
+            "emoji": emoji,
+            "answers": question_texts,
+            "category": category,
+            "total_questions": total_questions,
+            "quiz_title": quiz_title,
+        },
+    )
 
 
 def quiz_leaderboard(request):
     leaderboard = (
-        User.objects
-        .filter(quizresult__isnull=False)  
-        .annotate(
-            total_score=Sum('quizresult__score'),
-            attempts=Count('quizresult')
-        )
-        .order_by('-total_score', 'username')  
+        User.objects.filter(quizresult__isnull=False)
+        .annotate(total_score=Sum("quizresult__score"), attempts=Count("quizresult"))
+        .order_by("-total_score", "username")
     )
 
     badges = [
@@ -364,80 +422,93 @@ def quiz_leaderboard(request):
         ("🎖️", "Top 5"),
     ]
 
-   
     leaderboard_with_badges = []
     for idx, user in enumerate(leaderboard, start=1):
-        badge = ''
-        emoji = ''
+        badge = ""
+        emoji = ""
         if idx <= 5:
             emoji, badge = badges[idx - 1]
-        leaderboard_with_badges.append({
-            'rank': idx,
-            'username': user.username,
-            'avatar_url': user.profile.avatar.url if hasattr(user, 'profile') and user.profile.avatar else '/static/img/avatar-placeholder.png',
-            'total_score': user.total_score,
-            'attempts': user.attempts,
-            'badge': badge,
-            'emoji': emoji,
-        })
+        leaderboard_with_badges.append(
+            {
+                "rank": idx,
+                "username": user.username,
+                "avatar_url": (
+                    user.profile.avatar.url
+                    if hasattr(user, "profile") and user.profile.avatar
+                    else "/static/img/avatar-placeholder.png"
+                ),
+                "total_score": user.total_score,
+                "attempts": user.attempts,
+                "badge": badge,
+                "emoji": emoji,
+            }
+        )
 
     context = {
-        'leaderboard': leaderboard_with_badges,
+        "leaderboard": leaderboard_with_badges,
     }
-    return render(request, 'quiz/leaderboard.html', context)
+    return render(request, "quiz/leaderboard.html", context)
+
 
 def quiz_history(request):
-    raw_history = QuizResult.objects.filter(user=request.user).order_by('-date_taken')
+    raw_history = QuizResult.objects.filter(user=request.user).order_by("-date_taken")
     paginator = Paginator(raw_history, 10)  # 10 attempts per page
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
     history_page = paginator.get_page(page_number)
 
     formatted_history = []
     for attempt in history_page:
-        percentage = (attempt.score / attempt.total_questions) * 100 if attempt.total_questions else 0
+        percentage = (
+            (attempt.score / attempt.total_questions) * 100
+            if attempt.total_questions
+            else 0
+        )
         total_seconds = attempt.time_used_seconds or 0
         minutes = total_seconds // 60
         seconds = total_seconds % 60
-        formatted_history.append({
-            'date_taken': attempt.date_taken,
-            'category__name': attempt.category.name,
-            'score': attempt.score,
-            'total_questions': attempt.total_questions,
-            'percentage': percentage,
-            'minutes': minutes,
-            'seconds': seconds,
-        })
+        formatted_history.append(
+            {
+                "date_taken": attempt.date_taken,
+                "category__name": attempt.category.name,
+                "score": attempt.score,
+                "total_questions": attempt.total_questions,
+                "percentage": percentage,
+                "minutes": minutes,
+                "seconds": seconds,
+            }
+        )
 
     history_page.object_list = formatted_history
 
-    return render(request, 'quiz/history.html', {'history': history_page})
+    return render(request, "quiz/history.html", {"history": history_page})
 
 
 def search_view(request):
-    query = request.GET.get('q')
+    query = request.GET.get("q")
     results = []
     if query:
-     
+
         from .models import Post
+
         results = Post.objects.filter(title__icontains=query)
-    return render(request, 'core/search_results.html', {'query': query, 'results': results})
-
-
+    return render(
+        request, "core/search_results.html", {"query": query, "results": results}
+    )
 
 
 @login_required
 def add_post(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = PostForm(request.POST, request.FILES)
         if form.is_valid():
             post = form.save(commit=False)
-            post.author = request.user  
-            
+            post.author = request.user
             post.save()
-            return redirect('post_detail', pk=post.pk) 
+            return redirect("post_detail", pk=post.pk)
     else:
         form = PostForm()
-    return render(request, 'blog/add_post.html', {'form': form})
+    return render(request, "blog/add_post.html", {"form": form})
+
 
 @login_required
 def edit_post(request, pk):
@@ -445,16 +516,17 @@ def edit_post(request, pk):
     if post.author != request.user:
         return HttpResponseForbidden("You are not allowed to edit this post.")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = PostForm(request.POST, request.FILES, instance=post)
-     
+
         if form.is_valid():
             form.save()
-            return redirect('home')  
+            return redirect("home")
     else:
         form = PostForm(instance=post)
 
-    return render(request, 'edit_post.html', {'form': form})
+    return render(request, "edit_post.html", {"form": form})
+
 
 @login_required
 def delete_post(request, pk):
@@ -463,28 +535,30 @@ def delete_post(request, pk):
     if post.author != request.user:
         return HttpResponseForbidden("You are not allowed to delete this post.")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         post.delete()
-        return redirect('home')
+        return redirect("home")
 
-    return render(request, 'confirm_delete.html', {'post': post})
+    return render(request, "confirm_delete.html", {"post": post})
 
 
 from django.core.paginator import Paginator
-def post_list(request):
-    posts = Post.objects.filter(status='published').order_by('-created_at')
-    paginator = Paginator(posts, 6) 
 
-    page_number = request.GET.get('page')
+
+def post_list(request):
+    posts = Post.objects.filter(status="published").order_by("-created_at")
+    paginator = Paginator(posts, 6)
+
+    page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'core/post_list.html', {'page_obj': page_obj})
+    return render(request, "core/post_list.html", {"page_obj": page_obj})
 
 
 def online_users_view(request):
     users = User.objects.all()
     online_users = [user for user in users if is_user_online(user)]
-    return render(request, 'online_users.html', {'online_users': online_users})
+    return render(request, "online_users.html", {"online_users": online_users})
 
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -492,12 +566,13 @@ from django.contrib.auth.decorators import login_required
 from .models import Post, Comment
 from .forms import CommentForm
 
+
 @login_required
 def add_comment(request, post_id, parent_id=None):
     post = get_object_or_404(Post, id=post_id)
     parent_comment = get_object_or_404(Comment, id=parent_id) if parent_id else None
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = CommentForm(request.POST)
         if form.is_valid():
             comment = form.save(commit=False)
@@ -507,7 +582,7 @@ def add_comment(request, post_id, parent_id=None):
             comment.approved = True
             comment.save()
 
-    return redirect('post_detail', pk=post.id)
+    return redirect("post_detail", pk=post.id)
 
 
 @login_required
@@ -519,76 +594,83 @@ def like_comment(request, comment_id):
     else:
         comment.likes.add(request.user)
 
-    return redirect('post_detail', pk=comment.post.id)
+    return redirect("post_detail", pk=comment.post.id)
 
 
 def post_detail(request, pk):
+    """Retrieve single post"""
     post = get_object_or_404(Post, pk=pk)
-    comments = Comment.objects.filter(post=post, parent=None).order_by('-created')
+    comments = Comment.objects.filter(post=post, parent=None).order_by("-created")
     top_level_comments = comments.filter(parent__isnull=True)
     comment_form = CommentForm()
 
     context = {
-        'post': post,
-        'comments': comments,
-        'top_level_comments': top_level_comments,
-        'top_level_comment_count': top_level_comments.count(),
-        'comment_form': comment_form,
+        "post": post,
+        "comments": comments,
+        "top_level_comments": top_level_comments,
+        "top_level_comment_count": top_level_comments.count(),
+        "comment_form": comment_form,
     }
 
-    return render(request, 'core/post_detail.html', context)
-
+    return render(request, "core/post_detail.html", context)
 
 
 def download_post_pdf(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    template_path = 'core/post_pdf.html'
-    context = {'post': post}
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="post_{post_id}.pdf"'
+    template_path = "core/post_pdf.html"
+    context = {"post": post}
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="post_{post_id}.pdf"'
     template = get_template(template_path)
     html = template.render(context)
 
     pisa_status = pisa.CreatePDF(html, dest=response)
     if pisa_status.err:
-        return HttpResponse('We had some errors <pre>' + html + '</pre>')
+        return HttpResponse("We had some errors <pre>" + html + "</pre>")
     return response
+
 
 @login_required
 def edit_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id, user=request.user)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = CommentForm(request.POST, instance=comment)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Comment updated successfully.')
-            return redirect('post_detail', pk=comment.post.id)  
+            messages.success(request, "Comment updated successfully.")
+            return redirect("post_detail", pk=comment.post.id)
     else:
         form = CommentForm(instance=comment)
 
-    return render(request, 'core/edit_comment.html', {'form': form, 'comment': comment})
+    return render(request, "core/edit_comment.html", {"form": form, "comment": comment})
+
 
 @login_required
 def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id, user=request.user)
     post_id = comment.post.id
     comment.delete()
-    messages.success(request, 'Comment deleted.')
-    return redirect('post_detail', pk=post_id)
+    messages.success(request, "Comment deleted.")
+    return redirect("post_detail", pk=post_id)
 
-  
 
 def user_profile(request, username):
     profile_user = get_object_or_404(User, username=username)
-    user_posts = Post.objects.filter(author=profile_user, status='published').order_by('-created')
-    quiz_attempts = QuizResult.objects.filter(user=profile_user).order_by('-date_taken')  
+    user_posts = Post.objects.filter(author=profile_user, status="published").order_by(
+        "-created"
+    )
+    quiz_attempts = QuizResult.objects.filter(user=profile_user).order_by("-date_taken")
 
-    return render(request, 'core/user_profile.html', {
-        'profile_user': profile_user,
-        'user_posts': user_posts,
-        'quiz_attempts': quiz_attempts,
-    })
+    return render(
+        request,
+        "core/user_profile.html",
+        {
+            "profile_user": profile_user,
+            "user_posts": user_posts,
+            "quiz_attempts": quiz_attempts,
+        },
+    )
 
 
 from django.shortcuts import get_object_or_404, redirect
@@ -598,20 +680,18 @@ from .models import Comment, Post, Notification
 from django.shortcuts import get_object_or_404, redirect
 from .models import Comment, Post, Notification
 from django.contrib.auth.decorators import login_required
+
 
 @login_required
 def reply_to_comment(request, post_id, comment_id):
     parent_comment = get_object_or_404(Comment, id=comment_id)
     post = get_object_or_404(Post, id=post_id)
 
-    if request.method == 'POST':
-        body = request.POST.get('body')
+    if request.method == "POST":
+        body = request.POST.get("body")
         if body:
             reply = Comment.objects.create(
-                user=request.user,
-                post=post,
-                body=body,
-                parent=parent_comment
+                user=request.user, post=post, body=body, parent=parent_comment
             )
 
             # Optional notification
@@ -620,16 +700,15 @@ def reply_to_comment(request, post_id, comment_id):
                     user=parent_comment.user,
                     message=f"{request.user.username} replied to your comment.",
                     url=f"/post/{post.id}#comment-{reply.id}",
-                    tone='reply_sound.mp3'
+                    tone="reply_sound.mp3",
                 )
 
-    return redirect('post_detail', post_id=post.id)
-
-
+    return redirect("post_detail", post_id=post.id)
 
 
 def notifications(request):
-    return render(request, 'notifications.html')
+    return render(request, "notifications.html")
+
 
 def is_root(self):
     return self.parent is None
@@ -638,10 +717,9 @@ def is_root(self):
 # admin_views.py
 def user_analytics(request):
     user_data = User.objects.annotate(
-        total_quizzes=Count('userquizhistory'),
-        most_played=Subquery(...)
+        total_quizzes=Count("userquizhistory"), most_played=Subquery(...)
     )
-    return render(request, 'admin/user_analytics.html', {'data': user_data})
+    return render(request, "admin/user_analytics.html", {"data": user_data})
 
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -659,18 +737,24 @@ def unread_notifications_json(request):
     """
     Return unread notifications as JSON for AJAX/live notifications.
     """
-    notifications = Notification.objects.filter(user=request.user, is_read=False).select_related('sender', 'post')
-    
+    notifications = Notification.objects.filter(
+        user=request.user, is_read=False
+    ).select_related("sender", "post")
+
     data = []
     for n in notifications:
-        message = f"{n.sender.username} {n.verb} your post '{n.post.title if n.post else ''}'"
-        url = n.post.get_absolute_url() if n.post else '#'
-        data.append({
-            'id': n.id,
-            'message': message,
-            'url': url,
-            'tone': n.tone,
-        })
+        message = (
+            f"{n.sender.username} {n.verb} your post '{n.post.title if n.post else ''}'"
+        )
+        url = n.post.get_absolute_url() if n.post else "#"
+        data.append(
+            {
+                "id": n.id,
+                "message": message,
+                "url": url,
+                "tone": n.tone,
+            }
+        )
         notifications.update(is_read=True)
 
     return JsonResponse(data, safe=False)
@@ -684,12 +768,16 @@ def unread_notifications(request):
     """
     Display and auto-mark all unread notifications as read.
     """
-    notifications = Notification.objects.filter(user=request.user, is_read=False).select_related('sender', 'post')
-    
+    notifications = Notification.objects.filter(
+        user=request.user, is_read=False
+    ).select_related("sender", "post")
+
     # Mark them as read after displaying
     notifications.update(is_read=True)
 
-    return render(request, 'notifications/unread.html', {'notifications': notifications})
+    return render(
+        request, "notifications/unread.html", {"notifications": notifications}
+    )
 
 
 # =============================
@@ -700,8 +788,12 @@ def all_notifications(request):
     """
     Show all notifications ordered by date.
     """
-    notifications = Notification.objects.filter(user=request.user).select_related('sender', 'post').order_by('-created_at')
-    return render(request, 'notifications/all.html', {'notifications': notifications})
+    notifications = (
+        Notification.objects.filter(user=request.user)
+        .select_related("sender", "post")
+        .order_by("-created_at")
+    )
+    return render(request, "notifications/all.html", {"notifications": notifications})
 
 
 # =============================
@@ -712,11 +804,17 @@ def mark_notification_as_read(request, notification_id):
     """
     Mark a specific notification as read and redirect to related post or fallback.
     """
-    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification = get_object_or_404(
+        Notification, id=notification_id, user=request.user
+    )
     notification.is_read = True
     notification.save()
 
-    redirect_url = notification.post.get_absolute_url() if notification.post else reverse('unread_notifications')
+    redirect_url = (
+        notification.post.get_absolute_url()
+        if notification.post
+        else reverse("unread_notifications")
+    )
     return redirect(redirect_url)
 
 
@@ -729,28 +827,32 @@ def mark_all_notifications_as_read(request):
     Mark all unread notifications as read.
     """
     Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
-    return redirect('unread_notifications')
+    return redirect("unread_notifications")
+
 
 def quiz_list_view(request):
     # logic here
-    return render(request, 'quiz/quiz_list.html')
-
+    return render(request, "quiz/quiz_list.html")
 
 
 from django.shortcuts import get_object_or_404, render
 from .models import Comment
 
+
 def load_replies(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    replies = comment.replies.all().select_related('user', 'user__profile').order_by('created_at')
+    replies = (
+        comment.replies.all()
+        .select_related("user", "user__profile")
+        .order_by("created_at")
+    )
     context = {
-        'replies': replies,
-        'post': comment.post,
-        'user': request.user,
-        'depth': 4  
+        "replies": replies,
+        "post": comment.post,
+        "user": request.user,
+        "depth": 4,
     }
-    return render(request, 'partials/replies.html', context)
-
+    return render(request, "partials/replies.html", context)
 
 
 # views.py
@@ -759,6 +861,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
 from .models import Reply
+
 
 @login_required
 @require_POST
@@ -773,8 +876,9 @@ def like_reply(request):
         reply.likes.add(request.user)
         liked = True
 
-    return JsonResponse({
-        "liked": liked,
-        "total_likes": reply.likes.count(),
-    })
-
+    return JsonResponse(
+        {
+            "liked": liked,
+            "total_likes": reply.likes.count(),
+        }
+    )
