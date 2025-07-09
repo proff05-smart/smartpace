@@ -6,14 +6,15 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.urls import reverse
+from cloudinary.models import CloudinaryField
 
 
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(blank=True)
-    photo = models.ImageField(upload_to='profiles/', blank=True, null=True)
-    avatar = models.ImageField(upload_to='avatars/', default='avatars/default.png', blank=True)
+    photo = CloudinaryField('image', blank=True, null=True)
+    #avatar = CloudinaryField('image', default='avatars/default.png', blank=True)
     followers = models.ManyToManyField('self', symmetrical=False, blank=True)
     last_activity = models.DateTimeField(default=timezone.now)
     role = models.CharField(
@@ -268,3 +269,9 @@ class Reply(models.Model):
 
     def __str__(self):
         return f"Reply by {self.author} on {self.post}"
+
+
+from cloudinary.models import CloudinaryField
+
+photo = CloudinaryField('image', blank=True, null=True)
+avatar = CloudinaryField('image', default='https://res.cloudinary.com/your_cloud/image/upload/v123456789/default.png', blank=True)
