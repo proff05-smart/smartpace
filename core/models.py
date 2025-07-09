@@ -54,9 +54,8 @@ class Post(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
     is_pinned = models.BooleanField(default= False)
-    image = CloudinaryField('image', blank=True, null=True)
-    video = CloudinaryField('video', blank=True, null=True)
-   
+    image = CloudinaryField('image', blank=True, null=True,resource_type="image")
+    video = CloudinaryField('video', blank=True, null=True,resource_type="video")
 
 
     class Meta:
