@@ -25,14 +25,14 @@ class ProfileForm(forms.ModelForm):
 class PostForm(forms.ModelForm):
     class Meta:
         model = Post
-        fields = ['category', 'title', 'content', 'video_file','youtube_url', 'image']
+        fields = ['category', 'title', 'content', 'video','youtube_url', 'image']
         widgets = {
             'category': forms.Select(attrs={'class': 'form-control'}),
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'content': forms.Textarea(attrs={'class': 'form-control'}),
             'youtube_url': forms.URLInput(attrs={'class': 'form-control'}),
             'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-            'video_file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'video': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
 
 PostMediaFormSet = modelformset_factory(

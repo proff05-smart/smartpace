@@ -35,6 +35,7 @@ class Category(models.Model):
 
 from django.db import models
 from django.contrib.auth.models import User
+from cloudinary.models import CloudinaryField
 
 class Post(models.Model):
     STATUS_CHOICES = (
@@ -46,13 +47,15 @@ class Post(models.Model):
     category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True, related_name='posts')
     title = models.CharField(max_length=200)
     content = models.TextField()
-    image = models.ImageField(upload_to='post_images/', blank=True, null=True)
-    video_file = models.FileField(upload_to='post_videos/', blank=True, null=True)
+    #image = models.ImageField(upload_to='post_images/', blank=True, null=True)
+    #video_file = models.FileField(upload_to='post_videos/', blank=True, null=True)
     youtube_url = models.URLField(blank=True, null=True)
     likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
     created = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
     is_pinned = models.BooleanField(default= False)
+    image = CloudinaryField('image', blank=True, null=True)
+    video = CloudinaryField('video', blank=True, null=True)
    
 
 
@@ -79,8 +82,7 @@ class Comment(models.Model):
     approved = models.BooleanField(default=True)
     likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)
 
-    #def __str__(self):
-       # return f'Comment by {self.author} on {self.post}'
+   
 
     def __str__(self):
         return f"{self.user.username} - {self.post.title}"
@@ -253,3 +255,17 @@ class Quiz(models.Model):
 
     def __str__(self):
         return self.title
+
+
+from django.db import models
+from django.contrib.auth.models import User
+
+class Reply(models.Model):
+    content = models.TextField()
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='replies')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    likes = models.ManyToManyField(User, related_name='liked_replies', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reply by {self.author} on {self.post}"

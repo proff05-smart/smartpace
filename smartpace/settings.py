@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 # Load environment variables from .env at the very start
 load_dotenv()
@@ -25,10 +28,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'widget_tweaks',
-
-
+    'crispy_forms',
+    'crispy_bootstrap5',
+    'cloudinary',
+    'cloudinary_storage',
     'django.contrib.humanize',
     'core',
+    'embed_video',
 ]
 
 MIDDLEWARE = [
@@ -117,3 +123,29 @@ else:
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+
+
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dwp0xtvyb',
+    'API_KEY': '645945916996273',
+    'API_SECRET': 'DswXg8Az1tB_Z-ULVi2QIWFVo9M',
+    'SECURE': True
+}
+
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+
+
+
+cloudinary.config( 
+  cloud_name = 'dwp0xtvyb', 
+  api_key = '645945916996273', 
+  api_secret = 'DswXg8Az1tB_Z-ULVi2QIWFVo9M',
+  secure = True
+)

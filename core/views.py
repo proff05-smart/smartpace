@@ -11,8 +11,10 @@ from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Sum, Count
 from django.utils import timezone
-
+from django.template.loader import get_template
 from xhtml2pdf import pisa
+from django.http import HttpResponse
+
 
 # Models
 from .models import (
@@ -25,7 +27,7 @@ from .models import (
 # Forms
 from .forms import (
     RegisterForm, ProfileForm, UserForm, UserProfileForm,
-    PostForm, PostMediaFormSet, CommentForm, PDFUploadForm
+    PostForm,  CommentForm, PDFUploadForm
 )
 
 # Utilities
@@ -127,35 +129,6 @@ def post_list_view(request):
         'posts': page_obj,  # Use this in template
         'page_obj': page_obj
     })
-
-
-
-def post_detail(request, pk):
-    post = Post.objects.get(id=pk)
-    return render(request, 'core/post_detail.html', {'post': post})
-
-def post_detail_view(request, pk):
-    post = Post.objects.get(id=pk)
-    comments = post.comments.all().order_by('-created')
-    new_comment = None
-
-    if request.method == 'POST':
-        comment_form = CommentForm(request.POST)
-        if comment_form.is_valid():
-            new_comment = comment_form.save(commit=False)
-            new_comment.user = request.user
-            new_comment.post = post
-            new_comment.save()
-            return HttpResponseRedirect(reverse('post_detail', args=[pk]))
-    else:
-        comment_form = CommentForm()
-
-    return render(request, 'core/post_detail.html', {
-        'post': post,
-        'comment_form': comment_form,
-        'comments': comments
-    })
-
 
 @login_required
 def like_post_view(request, pk):
@@ -459,6 +432,7 @@ def add_post(request):
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user  
+            
             post.save()
             return redirect('post_detail', pk=post.pk) 
     else:
@@ -473,6 +447,7 @@ def edit_post(request, pk):
 
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, instance=post)
+     
         if form.is_valid():
             form.save()
             return redirect('home')  
@@ -512,65 +487,46 @@ def online_users_view(request):
     return render(request, 'online_users.html', {'online_users': online_users})
 
 
-
-
-def is_user_online(user):
-    profile = getattr(user, 'userprofile', None)
-    if profile:
-        return timezone.now() - profile.last_activity < timedelta(minutes=5)
-    return False
-
-
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Post, Comment
+from .forms import CommentForm
 
 @login_required
 def add_comment(request, post_id, parent_id=None):
     post = get_object_or_404(Post, id=post_id)
-    parent_comment = None
-
-    if parent_id:
-        parent_comment = get_object_or_404(Comment, id=parent_id)
+    parent_comment = get_object_or_404(Comment, id=parent_id) if parent_id else None
 
     if request.method == 'POST':
         form = CommentForm(request.POST)
         if form.is_valid():
-            new_comment = form.save(commit=False)
-            new_comment.post = post
-            new_comment.user = request.user
-            new_comment.parent = parent_comment
-            new_comment.save()
-            return redirect('post_detail', pk=post_id)
-    else:
-        form = CommentForm()
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.user = request.user
+            comment.parent = parent_comment
+            comment.approved = True
+            comment.save()
 
-    return render(request, 'post_detail.html', {'form': form, 'post': post})
+    return redirect('post_detail', pk=post.id)
+
 
 @login_required
 def like_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
+
     if request.user in comment.likes.all():
         comment.likes.remove(request.user)
     else:
         comment.likes.add(request.user)
+
     return redirect('post_detail', pk=comment.post.id)
-#edit
 
 
-
-def post_detail_view(request, pk):
+def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
-    comments = Comment.objects.filter(post=post).order_by('-created')
-    top_level_comments = comments.filter(parent=None)
+    comments = Comment.objects.filter(post=post, parent=None).order_by('-created')
+    top_level_comments = comments.filter(parent__isnull=True)
     comment_form = CommentForm()
-
-    if request.method == 'POST':
-        comment_form = CommentForm(request.POST)
-        if comment_form.is_valid():
-            new_comment = comment_form.save(commit=False)
-            new_comment.post = post
-            new_comment.user = request.user
-            new_comment.approved = True  # Make sure it's set before saving
-            new_comment.save()
-            return redirect('post_detail', pk=pk)
 
     context = {
         'post': post,
@@ -581,6 +537,8 @@ def post_detail_view(request, pk):
     }
 
     return render(request, 'core/post_detail.html', context)
+
+
 
 def download_post_pdf(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
@@ -617,7 +575,9 @@ def delete_comment(request, comment_id):
     post_id = comment.post.id
     comment.delete()
     messages.success(request, 'Comment deleted.')
-    return redirect('post_detail', pk=post_id)  
+    return redirect('post_detail', pk=post_id)
+
+  
 
 def user_profile(request, username):
     profile_user = get_object_or_404(User, username=username)
@@ -631,14 +591,41 @@ def user_profile(request, username):
     })
 
 
-def reply_to_comment(request, comment_id):
-   
-    Notification.objects.create(
-        user=original_comment.user,
-        message=f"{request.user.username} replied to your comment.",
-        url=f"/post/{post.slug}#comment-{reply.id}",
-        tone='reply_sound.mp3'
-    )
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Comment, Post, Notification
+
+from django.shortcuts import get_object_or_404, redirect
+from .models import Comment, Post, Notification
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def reply_to_comment(request, post_id, comment_id):
+    parent_comment = get_object_or_404(Comment, id=comment_id)
+    post = get_object_or_404(Post, id=post_id)
+
+    if request.method == 'POST':
+        body = request.POST.get('body')
+        if body:
+            reply = Comment.objects.create(
+                user=request.user,
+                post=post,
+                body=body,
+                parent=parent_comment
+            )
+
+            # Optional notification
+            if parent_comment.user != request.user:
+                Notification.objects.create(
+                    user=parent_comment.user,
+                    message=f"{request.user.username} replied to your comment.",
+                    url=f"/post/{post.id}#comment-{reply.id}",
+                    tone='reply_sound.mp3'
+                )
+
+    return redirect('post_detail', post_id=post.id)
+
+
 
 
 def notifications(request):
@@ -748,4 +735,46 @@ def quiz_list_view(request):
     # logic here
     return render(request, 'quiz/quiz_list.html')
 
+
+
+from django.shortcuts import get_object_or_404, render
+from .models import Comment
+
+def load_replies(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    replies = comment.replies.all().select_related('user', 'user__profile').order_by('created_at')
+    context = {
+        'replies': replies,
+        'post': comment.post,
+        'user': request.user,
+        'depth': 4  
+    }
+    return render(request, 'partials/replies.html', context)
+
+
+
+# views.py
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
+from .models import Reply
+
+@login_required
+@require_POST
+def like_reply(request):
+    reply_id = request.POST.get("reply_id")
+    reply = get_object_or_404(Reply, id=reply_id)
+
+    if request.user in reply.likes.all():
+        reply.likes.remove(request.user)
+        liked = False
+    else:
+        reply.likes.add(request.user)
+        liked = True
+
+    return JsonResponse({
+        "liked": liked,
+        "total_likes": reply.likes.count(),
+    })
 

@@ -1,0 +1,3 @@
+{% for reply in replies %}
+    {% include 'core/comment_template.html' with comment=reply depth=depth %}
+{% endfor %}
