@@ -1,20 +1,13 @@
 {% extends "base.html" %}
-{% load static humanize widget_tweaks %}
-{% load static youtube_embed %}
+{% load static humanize widget_tweaks youtube_embed youtube_tags %}
+
 {% block content %}
-{% load static %}
-{% load youtube_embed %}
-
-{% load youtube_tags %} 
-
-
-
 <div class="container mt-4">
 
-  <!-- 🔹 Title -->
+  <!-- 🔹 Post Title -->
   <h2 class="fw-bold">{{ post.title }}</h2>
 
-  <!-- 🔹 Metadata -->
+  <!-- 🔹 Post Metadata -->
   <div class="text-muted mb-3 d-flex flex-wrap align-items-center gap-2">
     <a href="{% url 'user_profile' post.author.username %}" class="d-flex align-items-center text-decoration-none text-reset">
       <img src="{% if post.author.profile.photo %}{{ post.author.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
@@ -38,55 +31,39 @@
     <span>• Category: <em>{{ post.category.name }}</em></span>
   </div>
 
-
-
-<!-- 🔹 Post Video -->
-{% if post.youtube_url %}
-  {% if "youtube.com" in post.youtube_url or "youtu.be" in post.youtube_url %}
-    {# Extract and embed YouTube video if it's a YouTube URL #}
-    <div class="ratio ratio-16x9 mb-3">
-      <iframe
-        src="https://www.youtube.com/embed/{{ post.youtube_url|cut:'https://youtu.be/'|cut:'https://www.youtube.com/watch?v=' }}"
-        title="YouTube video player"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowfullscreen
-        style="border: none;">
-      </iframe>
-    </div>
-  {% else %}
-    {# Use native video player for direct video links (e.g. .mp4) #}
-    <video width="100%" controls class="mb-3">
-      <source src="{{ post.youtube_url }}" type="video/mp4">
-      Your browser does not support the video tag.
-    </video>
-  {% endif %}
+  <!-- 🔹 Video Section -->
+  {% if post.youtube_url %}
+    {% if "youtube.com" in post.youtube_url or "youtu.be" in post.youtube_url %}
+      <div class="ratio ratio-16x9 mb-3">
+        <iframe
+          src="https://www.youtube.com/embed/{{ post.youtube_url|cut:'https://youtu.be/'|cut:'https://www.youtube.com/watch?v=' }}"
+          title="YouTube video player"
+          allowfullscreen class="border-0">
+        </iframe>
+      </div>
+    {% else %}
+      <video width="100%" controls class="mb-3">
+        <source src="{{ post.youtube_url }}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    {% endif %}
   {% elif post.video %}
-    {# Cloudinary or other direct video file #}
     <video width="100%" controls class="mb-3">
       <source src="{{ post.video.url }}" type="video/mp4">
       Your browser does not support the video tag.
     </video>
-{% endif %}
+  {% endif %}
 
-<!-- 🔹 Post Content -->
+  <!-- 🔹 Post Image -->
+  <img src="{% if post.image %}{{ post.image.url }}{% elif post.get_first_image_url %}{{ post.get_first_image_url }}{% else %}https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/default.jpg{% endif %}"
+       alt="{{ post.title }}" class="img-fluid rounded mb-3">
 
-{% if post.image %}
-  <img src="{{ post.image.url }}" alt="{{ post.title }}" class="img-fluid rounded mb-3">
-{% elif post.get_first_image_url %}
-  <img src="{{ post.get_first_image_url }}" alt="{{ post.title }}" class="img-fluid rounded mb-3">
-{% else %}
-  <img src="https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/default.jpg" alt="Default Image" class="img-fluid rounded mb-3">
-{% endif %}
+  <!-- 🔹 Post Body -->
+  <article class="mb-4" style="line-height: 1.7;">
+    {{ post.content|linebreaks }}
+  </article>
 
-<article class="mb-4" style="line-height: 1.7;">
-  {{ post.content|linebreaks }}
-</article>
-
-
-
-
-
-  <!-- 🔹 Actions -->
+  <!-- 🔹 Post Actions -->
   <div class="d-flex flex-wrap gap-2 mb-4">
     <form method="post" action="{% url 'like_post' post.pk %}">
       {% csrf_token %}
@@ -98,7 +75,7 @@
     <a href="{% url 'download_post_pdf' post.pk %}" class="btn btn-outline-primary">📥 Download PDF</a>
   </div>
 
-  <!-- 🔹 Edit/Delete -->
+  <!-- 🔹 Edit/Delete Buttons -->
   {% if user == post.author %}
     <div class="mb-4">
       <a href="{% url 'edit_post' post.pk %}" class="btn btn-warning btn-sm">✏️ Edit</a>
@@ -110,136 +87,127 @@
   <hr>
 
   <!-- 💬 Comment Form -->
-   {% if user.is_authenticated %}
-  <div class="card mb-4">
-    <div class="card-body">
-      <h5>💬 Add a Comment</h5>
-      <form method="POST" action="{% url 'add_comment' post.pk %}">
-        {% csrf_token %}
-        {{ comment_form.body|add_class:"form-control mb-2" }}
-        <button type="submit" class="btn btn-primary">Post Comment</button>
-      </form>
-    </div>
-  </div>
-{% else %}
-  <p><a href="{% url 'login' %}">Login</a> to comment.</p>
-{% endif %}
-
- {% for comment in comments %}
-  <div class="comment my-4" id="comment-{{ comment.id }}">
-    <div class="d-flex">
-      <a href="{% url 'profile' comment.user.username %}">
-        {% if comment.user.profile.photo %}
-          <img src="{{ comment.user.profile.photo.url }}" class="rounded-circle me-2" width="40" height="40" alt="User">
-        {% else %}
-          <img src="https://via.placeholder.com/40" class="rounded-circle me-2" width="40" height="40" alt="User">
-        {% endif %}
-      </a>
-      <div>
-        <strong><a href="{% url 'profile' comment.user.username %}">{{ comment.user.username }}</a></strong>
-        <small class="text-muted">• {{ comment.created|timesince }} ago</small>
-        <p class="mb-1">{{ comment.body }}</p>
-
-        <!-- Buttons for comment -->
-        <form method="POST" action="{% url 'like_comment' comment.id %}" class="d-inline">
+  {% if user.is_authenticated %}
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5>💬 Add a Comment</h5>
+        <form method="POST" action="{% url 'add_comment' post.pk %}">
           {% csrf_token %}
-          <button type="submit" class="btn btn-sm btn-outline-primary">
-            👍 Like ({{ comment.likes.count }})
-          </button>
+          {{ comment_form.body|add_class:"form-control mb-2" }}
+          <button type="submit" class="btn btn-primary">Post Comment</button>
         </form>
-
-        <button class="btn btn-sm btn-outline-secondary ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{ comment.id }}">
-          💬 Reply
-        </button>
-
-        {% if comment.user == request.user %}
-          <a href="{% url 'edit_comment' comment.id %}" class="btn btn-sm btn-outline-warning ms-2">✏️ Edit</a>
-          <form method="POST" action="{% url 'delete_comment' comment.id %}" class="d-inline ms-2">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this comment?');">🗑️ Delete</button>
-          </form>
-        {% endif %}
-
-        <!-- Reply form (collapsible) -->
-        <div class="collapse mt-2" id="replyForm{{ comment.id }}">
-          <form method="POST" action="{% url 'reply_to_comment' post.pk comment.id %}">
-            {% csrf_token %}
-            <textarea name="body" rows="2" class="form-control mb-2" placeholder="Write your reply..." required></textarea>
-            <button type="submit" class="btn btn-primary btn-sm">Post Reply</button>
-          </form>
-        </div>
-
-        <!-- Replies -->
-        {% if comment.replies.all %}
-          <div class="replies ms-4 mt-3">
-            {% for reply in comment.replies.all %}
-              <div class="reply my-2" id="reply-{{ reply.id }}">
-                <div class="d-flex">
-                  <a href="{% url 'profile' reply.user.username %}">
-                    {% if reply.user.profile.photo %}
-                      <img src="{{ reply.user.profile.photo.url }}" class="rounded-circle me-2" width="30" height="30" alt="User">
-                    {% else %}
-                      <img src="https://via.placeholder.com/30" class="rounded-circle me-2" width="30" height="30" alt="User">
-                    {% endif %}
-                  </a>
-                  <div>
-                    <strong><a href="{% url 'profile' reply.user.username %}">{{ reply.user.username }}</a></strong>
-                    <small class="text-muted">• {{ reply.created|timesince }} ago</small>
-                    <p class="mb-1">{{ reply.body }}</p>
-
-                    <!-- Reply action buttons -->
-                    <form method="POST" action="{% url 'like_comment' reply.id %}" class="d-inline">
-                      {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-primary">👍 Like ({{ reply.likes.count }})</button>
-                    </form>
-
-                    {% if reply.user == request.user %}
-                      <a href="{% url 'edit_comment' reply.id %}" class="btn btn-sm btn-outline-warning ms-2">✏️ Edit</a>
-                      <form method="POST" action="{% url 'delete_comment' reply.id %}" class="d-inline ms-2">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this reply?');">🗑️ Delete</button>
-                      </form>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
       </div>
     </div>
-  </div>
-{% empty %}
-  <p>No comments yet. Be the first to comment below.</p>
-{% endfor %}       
-  <!-- 📚 Related Posts -->
-  {% if related_posts %}
-    <h5 class="mt-5">📚 Related Posts</h5>
-    <div class="row">
-      {% for related in related_posts %}
-        <div class="col-md-4 mb-3">
-          <div class="card h-100">
-            {% if related.image %}
-  <img src="{{ related.image.url }}" alt="Post Image" class="img-fluid">
-{% else %}
-  <img src="{% static 'images/default.jpg' %}" alt="Default Image" class="img-fluid">
-{% endif %}
+  {% else %}
+    <p><a href="{% url 'login' %}">Login</a> to comment.</p>
+  {% endif %}
 
+  <!-- 💬 Comments and Replies -->
+  {% for comment in comments %}
+    <div class="comment my-4" id="comment-{{ comment.id }}">
+      <div class="d-flex">
+        <a href="{% url 'profile' comment.user.username %}">
+          <img src="{{ comment.user.profile.photo.url|default_if_none:'https://via.placeholder.com/40' }}"
+               class="rounded-circle me-2" width="40" height="40" alt="User">
+        </a>
+        <div>
+          <strong><a href="{% url 'profile' comment.user.username %}">{{ comment.user.username }}</a></strong>
+          <small class="text-muted">• {{ comment.created|timesince }} ago</small>
+          <p class="mb-1">{{ comment.body }}</p>
 
-            <div class="card-body">
-              <h6 class="card-title">{{ related.title }}</h6>
-              <a href="{% url 'post_detail' related.pk %}" class="btn btn-sm btn-outline-primary">Read More</a>
+          <!-- Actions -->
+          <form method="POST" action="{% url 'like_comment' comment.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-primary">👍 Like ({{ comment.likes.count }})</button>
+          </form>
+
+          <button class="btn btn-sm btn-outline-secondary ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{ comment.id }}">💬 Reply</button>
+
+          {% if comment.user == request.user %}
+            <a href="{% url 'edit_comment' comment.id %}" class="btn btn-sm btn-outline-warning ms-2">✏️ Edit</a>
+            <form method="POST" action="{% url 'delete_comment' comment.id %}" class="d-inline ms-2">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this comment?');">🗑️ Delete</button>
+            </form>
+          {% endif %}
+
+          <!-- Reply Form -->
+          <div class="collapse mt-2" id="replyForm{{ comment.id }}">
+            <form method="POST" action="{% url 'reply_to_comment' post.pk comment.id %}">
+              {% csrf_token %}
+              <textarea name="body" rows="2" class="form-control mb-2" placeholder="Write your reply..." required></textarea>
+              <button type="submit" class="btn btn-primary btn-sm">Post Reply</button>
+            </form>
+          </div>
+
+          <!-- Replies -->
+          {% if comment.replies.all %}
+            <div class="replies ms-4 mt-3">
+              {% for reply in comment.replies.all %}
+                <div class="reply my-2" id="reply-{{ reply.id }}">
+                  <div class="d-flex">
+                    <a href="{% url 'profile' reply.user.username %}">
+                      <img src="{{ reply.user.profile.photo.url|default_if_none:'https://via.placeholder.com/30' }}"
+                           class="rounded-circle me-2" width="30" height="30" alt="User">
+                    </a>
+                    <div>
+                      <strong><a href="{% url 'profile' reply.user.username %}">{{ reply.user.username }}</a></strong>
+                      <small class="text-muted">• {{ reply.created|timesince }} ago</small>
+                      <p class="mb-1">{{ reply.body }}</p>
+
+                      <form method="POST" action="{% url 'like_comment' reply.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-primary">👍 Like ({{ reply.likes.count }})</button>
+                      </form>
+
+                      {% if reply.user == request.user %}
+                        <a href="{% url 'edit_comment' reply.id %}" class="btn btn-sm btn-outline-warning ms-2">✏️ Edit</a>
+                        <form method="POST" action="{% url 'delete_comment' reply.id %}" class="d-inline ms-2">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this reply?');">🗑️ Delete</button>
+                        </form>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
             </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p>No comments yet. Be the first to comment below.</p>
+  {% endfor %}
+
+
+<!-- 📚 Related Posts -->
+{% if related_posts %}
+  <h5 class="mt-5">📚 Related Posts</h5>
+  <div class="row">
+    {% for related in related_posts %}
+      <div class="col-md-4 mb-3">
+        <div class="card h-100">
+          {% if related.image %}
+            <img src="{{ related.image.url }}" alt="Post Image" class="img-fluid"
+                 onerror="this.onerror=null;this.src='{% static 'images/default.jpg' %}';">
+          {% else %}
+            <img src="{% static 'images/default.jpg' %}" alt="Default Image" class="img-fluid">
+          {% endif %}
+
+          <div class="card-body">
+            <h6 class="card-title">{{ related.title }}</h6>
+            <a href="{% url 'post_detail' related.pk %}" class="btn btn-sm btn-outline-primary">Read More</a>
           </div>
         </div>
-      {% endfor %}
-    </div>
-  {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
 
 </div>
 {% endblock %}
-
-
 
 {% block extra_css %}
 <style>
@@ -257,15 +225,6 @@
 
 {% block extra_js %}
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.reply-btn').forEach(button => {
-      button.addEventListener('click', function (e) {
-        e.preventDefault();
-        const form = this.closest('.comment').querySelector('form.reply-form');
-        form.classList.toggle('d-none');
-      });
-    });
-  });
+  // You can add interactivity if needed here
 </script>
-
 {% endblock %}

@@ -97,9 +97,16 @@ urlpatterns = [
  # ✅ Correct name and function
 
 
-
+    path("notifications/unread/", views.unread_notifications, name="unread_notifications"),
+    path("notifications/mark/<int:notification_id>/", views.mark_notification_as_read, name="mark_notification_as_read"),
+    path("notifications/mark-all/", views.mark_all_notifications_as_read, name="mark_all_notifications_as_read"),
 
 ]
+
+
+
+
+    
 
 
 

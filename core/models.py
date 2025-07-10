@@ -237,7 +237,7 @@ class Notification(models.Model):
         return f"{self.sender} {self.verb} your post"
 
     class Meta:
-        ordering = ['-timestamp']  # show newest first
+        ordering = ['-timestamp'] 
 
 
 

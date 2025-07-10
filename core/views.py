@@ -737,9 +737,6 @@ from .models import Notification
 # =============================
 @login_required
 def unread_notifications_json(request):
-    """
-    Return unread notifications as JSON for AJAX/live notifications.
-    """
     notifications = Notification.objects.filter(
         user=request.user, is_read=False
     ).select_related("sender", "post")
@@ -749,16 +746,13 @@ def unread_notifications_json(request):
         message = (
             f"{n.sender.username} {n.verb} your post '{n.post.title if n.post else ''}'"
         )
-        url = n.post.get_absolute_url() if n.post else "#"
-        data.append(
-            {
-                "id": n.id,
-                "message": message,
-                "url": url,
-                "tone": n.tone,
-            }
-        )
-        notifications.update(is_read=True)
+        url = reverse("mark_notification_as_read", args=[n.id])  # 🔁 this view will mark as read
+        data.append({
+            "id": n.id,
+            "message": message,
+            "url": url,
+            "tone": n.tone,
+        })
 
     return JsonResponse(data, safe=False)
 
@@ -776,7 +770,7 @@ def unread_notifications(request):
     ).select_related("sender", "post")
 
     # Mark them as read after displaying
-    notifications.update(is_read=True)
+    #notifications.update(is_read=True)
 
     return render(
         request, "notifications/unread.html", {"notifications": notifications}
@@ -788,9 +782,7 @@ def unread_notifications(request):
 # =============================
 @login_required
 def all_notifications(request):
-    """
-    Show all notifications ordered by date.
-    """
+ 
     notifications = (
         Notification.objects.filter(user=request.user)
         .select_related("sender", "post")
