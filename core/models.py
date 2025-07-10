@@ -149,6 +149,8 @@ class QuizResult(models.Model):
 
 
 
+
+
 class PostMedia(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
     image = models.ImageField(upload_to='post_images/', blank=True, null=True)
@@ -156,7 +158,12 @@ class PostMedia(models.Model):
 
     def __str__(self):
         return f"Media for {self.post.title}"
-
+    
+    def get_first_image_url(self):
+        first_media = self.media.filter(image__isnull=False).first()
+        if first_media and first_media.image:
+            return first_media.image.url
+        return "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/default.jpg"
 
 class SiteSettings(models.Model):
     banner_text = models.CharField(max_length=255, default="Welcome to SMARTPACE - Your Science Hub!")
