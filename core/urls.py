@@ -29,6 +29,8 @@ urlpatterns = [
     path('like-reply/', views.like_reply, name='like-reply'),
     # urls.py
     path('profile/<str:username>/', views.user_profile, name='user_profile'),
+    path('post/<int:pk>/', views.post_detail, name='post_detail'),
+
 
 
 
@@ -100,6 +102,56 @@ urlpatterns = [
     path("notifications/unread/", views.unread_notifications, name="unread_notifications"),
     path("notifications/mark/<int:notification_id>/", views.mark_notification_as_read, name="mark_notification_as_read"),
     path("notifications/mark-all/", views.mark_all_notifications_as_read, name="mark_all_notifications_as_read"),
+    #path('unread-notifications/json/', unread_notifications_json, name='unread_notifications_json'),
+    path('post/<int:pk>/', views.post_detail, name='post_detail'),
+    path('post/<int:post_id>/comment/<int:comment_id>/reply/', views.reply_to_comment, name='reply_to_comment'),
+    path('post/<int:pk>/like/', views.like_post_view, name='like_post'),
+    path('post/<int:pk>/download/', views.download_post_pdf, name='download_post_pdf'),
+    path('post/<int:pk>/edit/', views.edit_post, name='edit_post'),
+    path('post/<int:pk>/delete/', views.delete_post, name='delete_post'),
+    # urls.py
+    path("post/<int:post_id>/comment/<int:comment_id>/reply/", views.reply_to_comment, name="reply_to_comment"),
+    # urls.py
+    path("post/<int:post_id>/comment/<int:comment_id>/reply/", views.reply_to_comment, name="reply_to_comment"),
+    path("post/<int:post_id>/comment/<int:comment_id>/reply/", views.reply_to_comment, name="reply_to_comment"),
+    path('post/<int:post_id>/comment/<int:comment_id>/reply/', views.reply_to_comment, name='reply_to_comment'),
+    path('', views.homepage_view, name='home'),
+    path('post/<int:pk>/like/', views.like_post_view, name='like_post'),
+    path('post/<int:pk>/comment/', views.add_comment, name='add_comment'),
+    path('post/<int:pk>/comment/<int:comment_id>/reply/', views.add_reply, name='add_reply'),
+    path('reply/<int:comment_id>/', views.add_reply, name='add_reply'),
+
+
+
+# Post views
+    path('post/<int:pk>/', views.post_detail, name='post_detail'),
+    #path('post/<int:pk>/like/', views.like_post, name='like_post'),
+    path('post/<int:pk>/edit/', views.edit_post, name='edit_post'),
+    path('post/<int:pk>/delete/', views.delete_post, name='delete_post'),
+    path('post/<int:pk>/download/', views.download_post_pdf, name='download_post_pdf'),
+
+    # Commenting
+    path('post/<int:pk>/comment/', views.add_comment, name='add_comment'),
+    path('post/<int:pk>/comment/<int:comment_id>/reply/', views.add_reply, name='add_reply'),
+
+    # Comment management
+    path('comment/<int:comment_id>/edit/', views.edit_comment, name='edit_comment'),
+    path('comment/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
+    path('comment/<int:comment_id>/like/', views.like_comment, name='like_comment'),
+    path('comment/<int:comment_id>/replies/', views.load_replies, name='load_replies'),
+    
+
+
+
+
+
+
+
+
+
+
+
+
 
 ]
 

@@ -2,13 +2,10 @@
 {% load static %}
 {% block content %}
 <div class="container mt-4">
-    <h4>🔔 Unread Notifications</h4>
-    <a class="btn btn-sm btn-outline-primary mb-3" href="{% url 'mark_all_notifications_as_read' %}">
-        Mark All as Read
-    </a>
+    <h4>📚 All Notifications</h4>
     {% if notifications %}
         {% for notification in notifications %}
-            <div class="alert alert-info d-flex align-items-center">
+            <div class="alert alert-secondary d-flex align-items-center">
                 <img src="{{ notification.sender.userprofile.photo.url }}"
                      class="rounded-circle me-3" width="40" height="40"
                      alt="{{ notification.sender.username }}">
@@ -23,7 +20,7 @@
             </div>
         {% endfor %}
     {% else %}
-        <p>No unread notifications.</p>
+        <p>No notifications yet.</p>
     {% endif %}
 </div>
 {% endblock %}

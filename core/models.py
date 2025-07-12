@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.urls import reverse
 from cloudinary.models import CloudinaryField
 
+#from core.models import Profile
 
 
 class Profile(models.Model):
@@ -57,6 +58,8 @@ class Post(models.Model):
     is_pinned = models.BooleanField(default= False)
     image = CloudinaryField('image', blank=True, null=True,resource_type="image")
     video = CloudinaryField('video', blank=True, null=True,resource_type="video")
+    views = models.PositiveIntegerField(default=0)
+
 
 
     class Meta:
@@ -70,25 +73,45 @@ class Post(models.Model):
     def get_absolute_url(self):
         return reverse('post_detail', kwargs={'pk': self.pk})
 
+# models.py
 
+from cloudinary.models import CloudinaryField
+
+class PostImage(models.Model):
+    post = models.ForeignKey(Post, related_name='extra_images', on_delete=models.CASCADE)
+    image = CloudinaryField('image', resource_type="image")
+    caption = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"Image for {self.post.title}"
+
+
+
+from django.db import models
+from django.contrib.auth.models import User
 
 class Comment(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    body = models.TextField()
+    body = models.TextField(verbose_name="Comment")
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     approved = models.BooleanField(default=True)
     likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)
 
-   
+    class Meta:
+        ordering = ['created']  # Chronological order; change to ['-created'] for newest first
 
     def __str__(self):
-        return f"{self.user.username} - {self.post.title}"
+        return f"{self.user.username} on '{self.post.title}'"
 
     def total_likes(self):
         return self.likes.count()
+
+    def is_reply(self):
+        return self.parent is not None
+
    
 
 
@@ -118,7 +141,7 @@ class QuizCategory(models.Model):
 class Question(models.Model):
     category = models.ForeignKey(QuizCategory, on_delete=models.CASCADE)
     text = models.TextField()
-    image = models.ImageField(upload_to='quiz_images/', blank=True, null=True)
+    image = CloudinaryField('image', blank=True, null=True,resource_type="image")
     option_a = models.CharField(max_length=200)
     option_b = models.CharField(max_length=200)
     option_c = models.CharField(max_length=200)
