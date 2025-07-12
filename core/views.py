@@ -14,6 +14,8 @@ from django.utils import timezone
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 from django.http import HttpResponse
+from django.contrib.auth.models import User
+
 
 
 # Models
@@ -150,15 +152,27 @@ def post_list_view(request):
     )
 
 
-@login_required
-def like_post_view(request, pk):
-    post = Post.objects.get(id=pk)
-    if request.user in post.likes.all():
-        post.likes.remove(request.user)
-    else:
-        post.likes.add(request.user)
-    return redirect("post_detail", pk=pk)
+# @login_required
+# def like_post_view(request, pk):
+#     post = get_object_or_404(Post, pk=pk)
 
+#     if request.user in post.likes.all():
+#         post.likes.remove(request.user)
+#     else:
+#         post.likes.add(request.user)
+
+#     return redirect("post_detail", pk=pk)
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.contrib import messages
+from django.utils.timezone import now
+from datetime import date
+
+from .models import SiteSettings, Post, Comment, DailyFact, QuizCategory
+from .forms import CommentForm
+from django.contrib.auth.models import User
 
 def homepage_view(request):
     settings = SiteSettings.objects.first()
@@ -167,9 +181,18 @@ def homepage_view(request):
     paginator = Paginator(all_posts, 6)
     page_number = request.GET.get("page")
     posts = paginator.get_page(page_number)
+
+    # Attach top-level comments to each post
+    for post in posts:
+        post.top_level_comments = post.comments.filter(parent__isnull=True)
+
     quiz_categories = QuizCategory.objects.all()
     today = date.today()
     daily_fact = DailyFact.objects.filter(date=today).first()
+    all_users = User.objects.all().order_by('username')
+
+    comment_form = CommentForm()
+
     return render(
         request,
         "core/home.html",
@@ -179,8 +202,61 @@ def homepage_view(request):
             "posts": posts,
             "quiz_categories": quiz_categories,
             "daily_fact": daily_fact,
+            "all_users": all_users,
+            "comment_form": comment_form,
         },
     )
+
+
+@login_required
+def like_post_view(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    if request.user in post.likes.all():
+        post.likes.remove(request.user)
+        messages.info(request, "You unliked this post.")
+    else:
+        post.likes.add(request.user)
+        messages.success(request, "You liked this post.")
+    return redirect("home")
+
+
+@login_required
+def add_comment(request, post_id, parent_id=None):
+    post = get_object_or_404(Post, id=post_id)
+    parent_comment = get_object_or_404(Comment, id=parent_id) if parent_id else None
+
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.user = request.user
+            comment.parent = parent_comment
+            comment.approved = True
+            comment.save()
+
+    return redirect("home")  
+
+
+@login_required
+def add_reply(request, pk, comment_id):
+    post = get_object_or_404(Post, pk=pk)
+    parent_comment = get_object_or_404(Comment, pk=comment_id)
+
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            reply = form.save(commit=False)
+            reply.post = post
+            reply.parent = parent_comment
+            reply.name = request.user.username
+            reply.save()
+            messages.success(request, "Reply posted!")
+        else:
+            messages.error(request, "Failed to post reply.")
+    return redirect("home")
+
+
 
 
 def pdf_list_view(request):
@@ -570,22 +646,22 @@ from .models import Post, Comment
 from .forms import CommentForm
 
 
-@login_required
-def add_comment(request, post_id, parent_id=None):
-    post = get_object_or_404(Post, id=post_id)
-    parent_comment = get_object_or_404(Comment, id=parent_id) if parent_id else None
+# @login_required
+# def add_comment(request, post_id, parent_id=None):
+#     post = get_object_or_404(Post, id=post_id)
+#     parent_comment = get_object_or_404(Comment, id=parent_id) if parent_id else None
 
-    if request.method == "POST":
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.post = post
-            comment.user = request.user
-            comment.parent = parent_comment
-            comment.approved = True
-            comment.save()
+#     if request.method == "POST":
+#         form = CommentForm(request.POST)
+#         if form.is_valid():
+#             comment = form.save(commit=False)
+#             comment.post = post
+#             comment.user = request.user
+#             comment.parent = parent_comment
+#             comment.approved = True
+#             comment.save()
 
-    return redirect("post_detail", pk=post.id)
+#     return redirect("home", pk=post.id)
 
 
 @login_required
@@ -597,25 +673,54 @@ def like_comment(request, comment_id):
     else:
         comment.likes.add(request.user)
 
-    return redirect("post_detail", pk=comment.post.id)
+    return redirect("home")
 
+
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Post, Comment
+from .forms import CommentForm
 
 def post_detail(request, pk):
-    """Retrieve single post"""
     post = get_object_or_404(Post, pk=pk)
-    comments = Comment.objects.filter(post=post, parent=None).order_by("-created")
-    top_level_comments = comments.filter(parent__isnull=True)
-    comment_form = CommentForm()
+
+    session_key = f'viewed_post_{post.pk}'
+    if not request.session.get(session_key, False):
+        post.views += 1
+        post.save()
+        request.session[session_key] = True
+
+    comments = Comment.objects.filter(post=post, approved=True).select_related('user', 'parent').prefetch_related('replies', 'likes')
+    top_level_comments = comments.filter(parent__isnull=True).order_by('-created')
+
+    if request.method == "POST":
+        comment_form = CommentForm(request.POST)
+        if comment_form.is_valid():
+            new_comment = comment_form.save(commit=False)
+            new_comment.post = post
+            new_comment.user = request.user
+            parent_id = request.POST.get('parent_id')
+            if parent_id:
+                try:
+                    parent_comment = Comment.objects.get(id=parent_id)
+                    new_comment.parent = parent_comment
+                except Comment.DoesNotExist:
+                    pass
+            new_comment.save()
+            return redirect('core/post_detail', pk=post.pk)
+    else:
+        comment_form = CommentForm()
 
     context = {
         "post": post,
-        "comments": comments,
         "top_level_comments": top_level_comments,
         "top_level_comment_count": top_level_comments.count(),
         "comment_form": comment_form,
+        "comments": comments,
     }
 
     return render(request, "core/post_detail.html", context)
+
+
 
 
 def download_post_pdf(request, post_id):
@@ -675,15 +780,9 @@ def user_profile(request, username):
         },
     )
 
-
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import Comment, Post, Notification
-
-from django.shortcuts import get_object_or_404, redirect
-from .models import Comment, Post, Notification
-from django.contrib.auth.decorators import login_required
-
 
 @login_required
 def reply_to_comment(request, post_id, comment_id):
@@ -691,13 +790,15 @@ def reply_to_comment(request, post_id, comment_id):
     post = get_object_or_404(Post, id=post_id)
 
     if request.method == "POST":
-        body = request.POST.get("body")
+        body = request.POST.get("body", "").strip()
         if body:
             reply = Comment.objects.create(
-                user=request.user, post=post, body=body, parent=parent_comment
+                user=request.user,
+                post=post,
+                body=body,
+                parent=parent_comment
             )
 
-            # Optional notification
             if parent_comment.user != request.user:
                 Notification.objects.create(
                     user=parent_comment.user,
@@ -706,7 +807,9 @@ def reply_to_comment(request, post_id, comment_id):
                     tone="reply_sound.mp3",
                 )
 
-    return redirect("post_detail", post_id=post.id)
+            return redirect(f"{reverse('home', kwargs={'pk': post.id})}#comment-{reply.id}")
+
+    return redirect("home", pk=post.id)
 
 
 def notifications(request):
@@ -770,7 +873,7 @@ def unread_notifications(request):
     ).select_related("sender", "post")
 
     # Mark them as read after displaying
-    #notifications.update(is_read=True)
+    notifications.update(is_read=True)
 
     return render(
         request, "notifications/unread.html", {"notifications": notifications}

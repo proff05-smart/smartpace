@@ -1,0 +1,14 @@
+{% load cloudinary %}
+
+{% for notification in notifications %}
+  <div class="notification d-flex align-items-center mb-2">
+    {% if notification.sender.profile.photo %}
+      <img src="{{ notification.sender.profile.photo.url }}" alt="Profile Photo" class="rounded-circle me-2" width="40" height="40">
+    {% else %}
+      <img src="https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v123456789/default_profile.png" alt="Default Profile" class="rounded-circle me-2" width="40" height="40">
+    {% endif %}
+    <div>
+      <strong>{{ notification.sender.username }}</strong> {{ notification.verb }}
+    </div>
+  </div>
+{% endfor %}
