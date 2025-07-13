@@ -8,14 +8,10 @@ from django.utils import timezone
 from django.urls import reverse
 from cloudinary.models import CloudinaryField
 
-#from core.models import Profile
-
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(blank=True)
     photo = CloudinaryField('image', blank=True, null=True)
-    #avatar = CloudinaryField('image', default='avatars/default.png', blank=True)
     followers = models.ManyToManyField('self', symmetrical=False, blank=True)
     last_activity = models.DateTimeField(default=timezone.now)
     role = models.CharField(
@@ -34,11 +30,6 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-
-from django.db import models
-from django.contrib.auth.models import User
-from cloudinary.models import CloudinaryField
-
 class Post(models.Model):
     STATUS_CHOICES = (
         ('draft', 'Draft'),
@@ -49,8 +40,6 @@ class Post(models.Model):
     category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True, related_name='posts')
     title = models.CharField(max_length=200)
     content = models.TextField()
-    #image = models.ImageField(upload_to='post_images/', blank=True, null=True)
-    #video_file = models.FileField(upload_to='post_videos/', blank=True, null=True)
     youtube_url = models.URLField(blank=True, null=True)
     likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -73,9 +62,7 @@ class Post(models.Model):
     def get_absolute_url(self):
         return reverse('post_detail', kwargs={'pk': self.pk})
 
-# models.py
 
-from cloudinary.models import CloudinaryField
 
 class PostImage(models.Model):
     post = models.ForeignKey(Post, related_name='extra_images', on_delete=models.CASCADE)
@@ -87,8 +74,7 @@ class PostImage(models.Model):
 
 
 
-from django.db import models
-from django.contrib.auth.models import User
+
 
 class Comment(models.Model):
     post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='comments')
@@ -264,12 +250,6 @@ class Notification(models.Model):
 
 
 
-
-
-
-
-
-
 class UserQuizHistory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     quiz = models.ForeignKey(QuizCategory, on_delete=models.CASCADE)
@@ -287,8 +267,7 @@ class Quiz(models.Model):
         return self.title
 
 
-from django.db import models
-from django.contrib.auth.models import User
+
 
 class Reply(models.Model):
     content = models.TextField()
