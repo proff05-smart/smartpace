@@ -1,11 +1,36 @@
-{% extends "base.html" %}
+
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
 {% block content %}
-<div class="container">
-  <h2>Register</h2>
-  <form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Register</button>
-  </form>
+<style>
+  body {
+    background: linear-gradient(to right, #e0f7fa, #e1bee7);
+    min-height: 100vh;
+  }
+</style>
+
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 90vh;">
+  <div class="col-md-6">
+    <div class="card shadow-lg border-0">
+      <div class="card-header bg-primary text-white text-center">
+        <h4 class="mb-0">Create Your Account</h4>
+      </div>
+      <div class="card-body">
+        <form method="POST" novalidate>
+          {% csrf_token %}
+          {{ form|crispy }}
+
+          <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-success btn-lg">Register</button>
+          </div>
+        </form>
+      </div>
+      <div class="card-footer text-center">
+        Already have an account?
+        <a href="{% url 'login' %}" class="text-primary">Login here</a>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
