@@ -18,6 +18,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.shortcuts import render, redirect
 from .forms import UserLoginForm
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from .models import Post
 
 
 
@@ -76,39 +81,46 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('home')  # Replace with your homepage or dashboard URL
+            return redirect('home')  
         else:
             form.add_error(None, 'Invalid username or password')
     return render(request, 'login.html', {'form': form})
 
-# Logout user
-def logout_view(request):
-    logout(request)
-    return redirect("login")
 
 
-# Profile page
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from .forms import ProfileForm
+from .models import Profile
 @login_required
 def profile_view(request):
-    profile = request.user.profile
+    profile, created = Profile.objects.get_or_create(user=request.user)
+    
     if request.method == "POST":
         form = ProfileForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
             form.save()
-            messages.success(request, "Profile updated.")
-            return redirect("profile")
+            messages.success(request, "Your profile has been updated.")
+            return redirect("profile_view")  
     else:
         form = ProfileForm(instance=profile)
+
     return render(request, "core/profile.html", {"form": form})
 
+
+from django import forms
+from django.forms import modelformset_factory
+from .models import Post, PostMedia
+from .forms import PostForm, PostMediaForm 
+
+PostMediaFormSet = modelformset_factory(PostMedia, form=PostMediaForm, extra=5)
 
 @login_required
 def post_create_view(request):
     if request.method == "POST":
-        post_form = PostForm(request.POST)
-        media_formset = PostMediaFormSet(
-            request.POST, request.FILES, queryset=PostMedia.objects.none()
-        )
+        post_form = PostForm(request.POST, request.FILES)
+        media_formset = PostMediaFormSet(request.POST, request.FILES, queryset=PostMedia.objects.none())
 
         if post_form.is_valid() and media_formset.is_valid():
             post = post_form.save(commit=False)
@@ -117,10 +129,12 @@ def post_create_view(request):
 
             for form in media_formset.cleaned_data:
                 if form:
-                    PostMedia.objects.create(
-                        post=post, image=form.get("image"), video=form.get("video")
-                    )
-            messages.success(request, "Post created!")
+                    image = form.get("image")
+                    video = form.get("video")
+                    if image or video:
+                        PostMedia.objects.create(post=post, image=image, video=video)
+
+            messages.success(request, "Post created successfully!")
             return redirect("home")
     else:
         post_form = PostForm()
@@ -132,10 +146,6 @@ def post_create_view(request):
         {"post_form": post_form, "media_formset": media_formset},
     )
 
-
-from django.core.paginator import Paginator
-
-
 def post_list_view(request):
     query = request.GET.get("q")
     posts = Post.objects.all().order_by("-created")
@@ -143,55 +153,45 @@ def post_list_view(request):
     if query:
         posts = posts.filter(title__icontains=query)
 
-    paginator = Paginator(posts, 6)  # Show 6 posts per page
+    paginator = Paginator(posts, 12)  
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
     return render(
         request,
         "core/post_list.html",
-        {"posts": page_obj, "page_obj": page_obj},  # Use this in template
+        {"posts": page_obj, "page_obj": page_obj},  
     )
 
 
-# @login_required
-# def like_post_view(request, pk):
-#     post = get_object_or_404(Post, pk=pk)
+@login_required
+def like_post_view(request, pk):
+    post = get_object_or_404(Post, pk=pk)
 
-#     if request.user in post.likes.all():
-#         post.likes.remove(request.user)
-#     else:
-#         post.likes.add(request.user)
+    if request.user in post.likes.all():
+        post.likes.remove(request.user)
+    else:
+        post.likes.add(request.user)
 
-#     return redirect("post_detail", pk=pk)
+    return redirect("post_detail", pk=pk)
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
-from django.contrib import messages
-from django.utils.timezone import now
-from datetime import date
-
-from .models import SiteSettings, Post, Comment, DailyFact, QuizCategory
-from .forms import CommentForm
-from django.contrib.auth.models import User
 
 def homepage_view(request):
     settings = SiteSettings.objects.first()
-    categories = QuizCategory.objects.all()[:4]
-    all_posts = Post.objects.order_by("-created")
+    quiz_categories = QuizCategory.objects.all()
+    categories = quiz_categories[:4]
+
+    all_posts = Post.objects.prefetch_related("comments").order_by("-created")
     paginator = Paginator(all_posts, 6)
     page_number = request.GET.get("page")
     posts = paginator.get_page(page_number)
 
-    # Attach top-level comments to each post
     for post in posts:
         post.top_level_comments = post.comments.filter(parent__isnull=True)
 
-    quiz_categories = QuizCategory.objects.all()
     today = date.today()
     daily_fact = DailyFact.objects.filter(date=today).first()
-    all_users = User.objects.all().order_by('username')
+    all_users = User.objects.all().order_by('username')  
 
     comment_form = CommentForm()
 
@@ -209,83 +209,141 @@ def homepage_view(request):
         },
     )
 
+# @login_required
+# def like_post_view(request, pk):
+#     post = get_object_or_404(Post, pk=pk)
+#     user = request.user
 
+#     if user in post.likes.all():
+#         post.likes.remove(user)
+#         liked = False
+#     else:
+#         post.likes.add(user)
+#         liked = True
+
+#     return JsonResponse({
+#         'liked': liked,
+#         'total_likes': post.likes.count(),
+#         'message': "Liked" if liked else "Unliked"
+#     })
+
+
+
+# @login_required
+# def toggle_like_ajax(request):
+#     data = json.loads(request.body)
+#     post_id = data.get("post_id")
+#     post = Post.objects.get(pk=post_id)
+#     user = request.user
+
+#     if user in post.likes.all():
+#         post.likes.remove(user)
+#         liked = False
+#     else:
+#         post.likes.add(user)
+#         liked = True
+
+#     return JsonResponse({
+#         "liked": liked,
+#         "likes_count": post.likes.count()
+#     })
+
+# @login_required
+# def add_comment(request, pk):
+#     post = get_object_or_404(Post, id=pk)
+#     parent_id = request.POST.get("parent_id")
+#     parent_comment = get_object_or_404(Comment, id=parent_id, post=post) if parent_id else None
+
+#     if request.method == "POST":
+#         form = CommentForm(request.POST)
+#         if form.is_valid():
+#             comment = form.save(commit=False)
+#             comment.post = post
+#             comment.user = request.user
+#             comment.parent = parent_comment
+#             comment.approved = True
+#             comment.save()
+
+#             if request.headers.get("x-requested-with") == "XMLHttpRequest":
+#                 html = render_to_string(
+#                     "partials/comment_item.html",
+#                     {"comment": comment, "post": post},
+#                     request=request
+#                 )
+#                 return JsonResponse({
+#                     "success": True,
+#                     "reply_html": html,
+#                     "comment_id": comment.id
+#                 })
+
+#     return redirect("post_detail", pk=pk)
 @login_required
-def like_post_view(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    if request.user in post.likes.all():
-        post.likes.remove(request.user)
-        messages.info(request, "You unliked this post.")
-    else:
-        post.likes.add(request.user)
-        messages.success(request, "You liked this post.")
-    return redirect("home")
-
-
-@login_required
-def add_comment(request, post_id, parent_id=None):
+def add_reply(request, post_id, comment_id):
+    """
+    Handles reply submission to a comment via POST or AJAX.
+    """
     post = get_object_or_404(Post, id=post_id)
-    parent_comment = get_object_or_404(Comment, id=parent_id) if parent_id else None
-
-    if request.method == "POST":
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.post = post
-            comment.user = request.user
-            comment.parent = parent_comment
-            comment.approved = True
-            comment.save()
-
-    return redirect("home")  
-
-
-@login_required
-def add_reply(request, pk, comment_id):
-    post = get_object_or_404(Post, pk=pk)
-    parent_comment = get_object_or_404(Comment, pk=comment_id)
+    parent_comment = get_object_or_404(Comment, id=comment_id, post=post)
 
     if request.method == "POST":
         form = CommentForm(request.POST)
         if form.is_valid():
             reply = form.save(commit=False)
+            reply.user = request.user
             reply.post = post
             reply.parent = parent_comment
-            reply.name = request.user.username
+            reply.approved = True
             reply.save()
-            messages.success(request, "Reply posted!")
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                html = render_to_string(
+                    'partials/comment_item.html',
+                    {'comment': reply, 'post': post},
+                    request=request
+                )
+                return JsonResponse({'success': True, 'html': html, 'comment_id': reply.id})
+
+            messages.success(request, "Reply posted successfully.")
         else:
-            messages.error(request, "Failed to post reply.")
-    return redirect("home")
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
+            messages.error(request, "There was an error posting your reply.")
 
-
-
-def pdf_list_view(request):
-    pdfs = PDFDocument.objects.order_by("-uploaded_at")
-    return render(request, "core/pdf_list.html", {"pdfs": pdfs})
-
+    return redirect("post_detail", post_id=post.id)
+ 
 
 @login_required
-def pdf_upload_view(request):
-    if request.method == "POST":
-        form = PDFUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            pdf = form.save(commit=False)
-            pdf.uploaded_by = request.user
-            pdf.save()
-            return redirect("pdf_list")
-    else:
-        form = PDFUploadForm()
-    return render(request, "core/pdf_upload.html", {"form": form})
+def load_reply_form(request, parent_id):
+    """
+    Renders a reply form via AJAX when user clicks 'Reply'.
+    """
+    comment = get_object_or_404(Comment, id=parent_id)
+    form = CommentForm()
 
+    if request.headers.get('x-requested-with') != 'XMLHttpRequest':
+        return HttpResponse(status=403)
+
+    html = render_to_string(
+        'partials/reply_form.html',
+        {'form': form, 'post': comment.post, 'parent': comment},
+        request=request
+    )
+    return HttpResponse(html)
+
+
+
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from .models import Post
 
 @login_required
 def profile_dashboard(request):
     user = request.user
     profile = user.profile
     user_posts = Post.objects.filter(author=user)
-    quiz_attempts = user.quizresult_set.all().order_by("-taken_at")
+    quiz_results = user.quizresult_set.select_related("quiz").order_by("-taken_at")
 
     return render(
         request,
@@ -294,7 +352,7 @@ def profile_dashboard(request):
             "profile_user": user,
             "profile": profile,
             "user_posts": user_posts,
-            "quiz_result": quiz_attempts,
+            "quiz_results": quiz_results,
         },
     )
 
@@ -407,7 +465,7 @@ def quiz_result(request):
     score = quiz["score"]
     percentage = (score / total_questions) * 100 if total_questions > 0 else 0
 
-    # Badge logic
+   
     if percentage >= 90:
         remarks, badge, badge_class, emoji = (
             "🏅 Excellent work! You're a quiz champion! 🎉 Keep shining!",
@@ -437,7 +495,7 @@ def quiz_result(request):
             "❌",
         )
 
-    # Save quiz result
+   
     QuizResult.objects.create(
         user=request.user,
         category=category,
@@ -447,7 +505,7 @@ def quiz_result(request):
         total=total_questions,
     )
 
-    # Prepare question data for the template
+    
     question_ids = [ans["id"] for ans in quiz["answers"]]
     questions = Question.objects.in_bulk(question_ids)
 
@@ -508,7 +566,7 @@ def quiz_leaderboard(request):
         if idx <= 5:
             emoji, badge = badges[idx - 1]
 
-        # Use `photo` instead of `avatar`
+       
         photo_url = "/static/img/avatar-placeholder.png"
         if hasattr(user, "profile") and getattr(user.profile, "photo", None):
             try:
@@ -533,7 +591,7 @@ def quiz_leaderboard(request):
 
 def quiz_history(request):
     raw_history = QuizResult.objects.filter(user=request.user).order_by("-date_taken")
-    paginator = Paginator(raw_history, 10)  # 10 attempts per page
+    paginator = Paginator(raw_history, 10) 
     page_number = request.GET.get("page")
     history_page = paginator.get_page(page_number)
 
@@ -623,7 +681,6 @@ def delete_post(request, pk):
     return render(request, "confirm_delete.html", {"post": post})
 
 
-from django.core.paginator import Paginator
 
 
 def post_list(request):
@@ -636,35 +693,15 @@ def post_list(request):
     return render(request, "core/post_list.html", {"page_obj": page_obj})
 
 
-def online_users_view(request):
-    users = User.objects.all()
-    online_users = [user for user in users if is_user_online(user)]
-    return render(request, "online_users.html", {"online_users": online_users})
+# def online_users_view(request):
+#     users = User.objects.all()
+#     online_users = [user for user in users if is_user_online(user)]
+#     return render(request, "online_users.html", {"online_users": online_users})
 
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from .models import Post, Comment
-from .forms import CommentForm
 
-
-# @login_required
-# def add_comment(request, post_id, parent_id=None):
-#     post = get_object_or_404(Post, id=post_id)
-#     parent_comment = get_object_or_404(Comment, id=parent_id) if parent_id else None
-
-#     if request.method == "POST":
-#         form = CommentForm(request.POST)
-#         if form.is_valid():
-#             comment = form.save(commit=False)
-#             comment.post = post
-#             comment.user = request.user
-#             comment.parent = parent_comment
-#             comment.approved = True
-#             comment.save()
-
-#     return redirect("home", pk=post.id)
-
+from django.shortcuts import redirect, get_object_or_404
+from .models import Comment
 
 @login_required
 def like_comment(request, comment_id):
@@ -675,12 +712,10 @@ def like_comment(request, comment_id):
     else:
         comment.likes.add(request.user)
 
-    return redirect("home")
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "home"
+    return redirect(next_url)
 
 
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Post, Comment
-from .forms import CommentForm
 
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
@@ -708,7 +743,7 @@ def post_detail(request, pk):
                 except Comment.DoesNotExist:
                     pass
             new_comment.save()
-            return redirect('core/post_detail', pk=post.pk)
+            return redirect('post_detail', pk=post.pk)
     else:
         comment_form = CommentForm()
 
@@ -720,24 +755,24 @@ def post_detail(request, pk):
         "comments": comments,
     }
 
-    return render(request, "core/post_detail.html", context)
+    return render(request, "post_detail.html", context)
 
 
 
 
-def download_post_pdf(request, post_id):
-    post = get_object_or_404(Post, pk=post_id)
-    template_path = "core/post_pdf.html"
-    context = {"post": post}
-    response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="post_{post_id}.pdf"'
-    template = get_template(template_path)
-    html = template.render(context)
+# def download_post_pdf(request, post_id):
+#     post = get_object_or_404(Post, pk=post_id)
+#     template_path = "core/post_pdf.html"
+#     context = {"post": post}
+#     response = HttpResponse(content_type="application/pdf")
+#     response["Content-Disposition"] = f'attachment; filename="post_{post_id}.pdf"'
+#     template = get_template(template_path)
+#     html = template.render(context)
 
-    pisa_status = pisa.CreatePDF(html, dest=response)
-    if pisa_status.err:
-        return HttpResponse("We had some errors <pre>" + html + "</pre>")
-    return response
+#     pisa_status = pisa.CreatePDF(html, dest=response)
+#     if pisa_status.err:
+#         return HttpResponse("We had some errors <pre>" + html + "</pre>")
+#     return response
 
 
 @login_required
@@ -782,13 +817,9 @@ def user_profile(request, username):
         },
     )
 
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from .models import Comment, Post, Notification
-
 @login_required
-def reply_to_comment(request, post_id, comment_id):
-    parent_comment = get_object_or_404(Comment, id=comment_id)
+def reply_to_comment(request, post_id, parent_id):
+    parent_comment = get_object_or_404(Comment, id=parent_id)
     post = get_object_or_404(Post, id=post_id)
 
     if request.method == "POST":
@@ -809,7 +840,8 @@ def reply_to_comment(request, post_id, comment_id):
                     tone="reply_sound.mp3",
                 )
 
-            return redirect(f"{reverse('home', kwargs={'pk': post.id})}#comment-{reply.id}")
+            return redirect(f"{reverse('post_detail', kwargs={'pk': post.id})}#comment-{reply.id}")
+
 
     return redirect("home", pk=post.id)
 
@@ -830,11 +862,7 @@ def user_analytics(request):
     return render(request, "admin/user_analytics.html", {"data": user_data})
 
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.urls import reverse
-from .models import Notification
+
 
 
 # =============================
@@ -954,15 +982,6 @@ def load_replies(request, comment_id):
     }
     return render(request, "partials/replies.html", context)
 
-
-# views.py
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.shortcuts import get_object_or_404
-from .models import Reply
-
-
 @login_required
 @require_POST
 def like_reply(request):
@@ -982,3 +1001,29 @@ def like_reply(request):
             "total_likes": reply.likes.count(),
         }
     )
+
+
+@login_required
+def add_reply_ajax(request, post_pk, parent_id):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        body = data.get("body", "").strip()
+        parent_comment = Comment.objects.get(pk=parent_id)
+        post = Post.objects.get(pk=post_pk)
+
+        if body:
+            reply = Comment.objects.create(
+                post=post,
+                user=request.user,
+                body=body,
+                parent=parent_comment
+            )
+            html = render_to_string("partials/comment_item.html", {
+                "comment": reply,
+                "post": post,
+                "user": request.user,
+            })
+
+            return JsonResponse({"success": True, "reply_html": html})
+
+    return JsonResponse({"success": False}, status=400)
