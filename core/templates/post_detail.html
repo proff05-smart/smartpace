@@ -6,6 +6,9 @@
   <!-- 🔹 Post Title -->
   <h2 class="fw-bold">{{ post.title }}</h2>
 
+
+
+
   <!-- 🔹 Post Metadata -->
   <div class="text-muted mb-3 d-flex flex-wrap align-items-center gap-2">
     <a href="{% url 'user_profile' post.author.username %}" class="d-flex align-items-center text-decoration-none text-reset">
@@ -29,9 +32,6 @@
     {% endif %}
     <span>• Category: <em>{{ post.category.name }}</em></span>
   </div>
-
-
-
 
 <!-- 🔹 Media Display -->
 {% if post.video %}
@@ -62,53 +62,61 @@
     {{ post.content|safe }}
   </div>
 
-  <!-- 🔹 Post Actions -->
-  <div class="d-flex flex-wrap gap-2 mb-4">
-    <form method="post" action="{% url 'like_post' post.pk %}">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-link text-success p-0 m-0 align-baseline small">
-        👍 Like ({{ post.total_likes }})
-      </button>
-    </form>
-    <button class="btn btn-outline-secondary" onclick="window.print()">🖨️ Print</button>
-    <a href="{% url 'download_post_pdf' post.pk %}" class="btn btn-outline-primary">📥 Download PDF</a>
+
+  <a href="{% url 'profile_dashboard' %}">
+  <img src="{{ request.user.profile.photo.url }}"
+       alt="Profile Photo"
+       class="rounded-circle"
+       width="40" height="40"
+       style="object-fit: cover;">
+</a>
+
+ 
+      
+
+<!-- 🔹 Edit/Delete Buttons -->
+{% if user == post.author %}
+  <div class="mb-2">
+    <a href="{% url 'edit_post' post.pk %}" class="text-warning small me-2">✏️ Edit</a>
+    <a href="{% url 'delete_post' post.pk %}" class="text-danger small"
+       onclick="return confirm('Are you sure you want to delete this post?')">🗑️ Del</a>
   </div>
+{% endif %}
 
-  <!-- 🔹 Edit/Delete Buttons -->
-  {% if user == post.author %}
-    <div class="mb-2">
-      <a href="{% url 'edit_post' post.pk %}" class="text-warning small me-2">✏️ Edit</a>
-      <a href="{% url 'delete_post' post.pk %}" class="text-danger small"
-         onclick="return confirm('Are you sure you want to delete this post?')">🗑️ Del</a>
-    </div>
-  {% endif %}
+<hr>
 
-  <hr>
+<!-- ❤️ Like Button for Post -->
+<form method="POST" action="{% url 'like_post' post.pk %}" class="d-inline">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <button type="submit" class="btn btn-sm {% if user in post.likes.all %}btn-danger{% else %}btn-outline-danger{% endif %}">
+    ❤️ {{ post.likes.count }}
+  </button>
+</form>
 
-  <!-- 🔹 Comment Form -->
-  {% if user.is_authenticated %}
-    <div class="card mb-4">
-      <div class="card-body">
-        <h5>💬 Add a Comment</h5>
-        <form method="post" action="{% url 'add_comment' post.pk %}">
-          {% csrf_token %}
-          {{ comment_form.body|add_class:"form-control mb-2" }}
-          <button type="submit" class="btn btn-primary btn-sm">Your Views</button>
-        </form>
+
+<!-- 🔹 Comment Form -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">💬 Add a Comment</h5>
+<form method="POST" action="{% url 'post_detail' post.pk %}">
+      {% csrf_token %}
+      <div class="mb-3">
+        {{ comment_form.body|add_class:"form-control" }}
       </div>
-    </div>
-  {% else %}
-    <p><a href="{% url 'login' %}">Login</a> to comment.</p>
-  {% endif %}
+      <button type="submit" class="btn btn-sm btn-primary">Post Comment</button>
+    </form>
+  </div>
+</div>
 
-  <!-- 🔹 Comments Section -->
-  <h5 class="mb-3">{{ top_level_comment_count }} Comment{{ top_level_comment_count|pluralize }}</h5>
+<!-- 🔹 Comments Section -->
+<h5 class="mb-3">{{ top_level_comment_count }} Comment{{ top_level_comment_count|pluralize }}</h5>
+{% if top_level_comments %}
+  {% include "comment_tree.html" with comments=top_level_comments post=post depth=0 %}
+{% else %}
+  <p>No comments yet. Be the first to comment below.</p>
+{% endif %}
 
-  {% for comment in top_level_comments %}
-    {% include "comment_tree.html" with comments=top_level_comments post=post depth=0 %}
-  {% empty %}
-    <p>No comments yet. Be the first to comment below.</p>
-  {% endfor %}
 
   <!-- 📚 Related Posts -->
   {% if related_posts %}
@@ -135,12 +143,27 @@
     </section>
   {% endif %}
 
-  <!-- Optional: Profile Icon Link -->
-  <div class="text-end mt-4">
-    <a href="{% url 'profile' user.username %}" title="View Profile">
-      <i class="bi bi-person-circle fs-3 text-primary"></i>
-    </a>
-  </div>
 
-</div>
+
+
+<script>
+function toggleLike(postId) {
+    fetch("{% url 'like_post' post.pk %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ post_id: postId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const btn = document.getElementById('like-btn');
+        btn.innerText = data.liked ? 'Unlike' : 'Like';
+        document.getElementById('like-count').innerText = data.likes_count;
+    });
+}
+</script>
+
+
 {% endblock %}

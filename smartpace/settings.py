@@ -106,7 +106,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Authentication redirects
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/profile/dashboard/'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'login'
+
 
 # Security settings - adjust based on DEBUG mode
 if DEBUG:

@@ -91,7 +91,7 @@ class PostMediaForm(forms.ModelForm):
 
 
 # --- FormSet for PostMedia ---
-PostMediaFormSet = modelformset_factory(PostMedia, form=PostMediaForm, extra=3, can_delete=False)
+PostMediaFormSet = modelformset_factory(PostMedia, form=PostMediaForm, extra=5, can_delete=False)
 
 
 # --- Comment Form ---

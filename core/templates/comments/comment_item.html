@@ -1,0 +1,18 @@
+<div class="comment mt-2" id="comment-{{ comment.id }}">
+  <strong>{{ comment.user.username }}</strong> <small>{{ comment.created }}</small>
+  <p>{{ comment.content }}</p>
+
+  <a data-bs-toggle="collapse" href="#reply-form-{{ comment.id }}">Reply</a>
+
+  <div class="collapse" id="reply-form-{{ comment.id }}">
+    <form class="comment-form mt-2" data-post-id="{{ comment.post.id }}" data-parent-id="{{ comment.id }}" method="post">
+      {% csrf_token %}
+      <textarea name="content" rows="2" class="form-control mb-2" placeholder="Write your reply..."></textarea>
+      <button type="submit" class="btn btn-secondary btn-sm">Reply</button>
+    </form>
+  </div>
+
+  {% for reply in comment.replies.all %}
+    {% include 'comments/comment_item.html' with comment=reply %}
+  {% endfor %}
+</div>

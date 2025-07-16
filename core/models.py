@@ -82,6 +82,7 @@ class Comment(models.Model):
     body = models.TextField(verbose_name="Comment")
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
     created = models.DateTimeField(auto_now_add=True)
+    email = models.EmailField()
     updated = models.DateTimeField(auto_now=True)
     approved = models.BooleanField(default=True)
     likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)
@@ -97,9 +98,6 @@ class Comment(models.Model):
 
     def is_reply(self):
         return self.parent is not None
-
-   
-
 
 
 class Announcement(models.Model):
@@ -161,9 +159,9 @@ class QuizResult(models.Model):
 
 
 class PostMedia(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
-    image = models.ImageField(upload_to='post_images/', blank=True, null=True)
-    video = models.FileField(upload_to='post_videos/', blank=True, null=True)
+    post = models.ForeignKey(Post, related_name='media', on_delete=models.CASCADE)
+    image = CloudinaryField('image', blank=True, null=True, resource_type='image')
+    video = CloudinaryField('video', blank=True, null=True, resource_type='video')
 
     def __str__(self):
         return f"Media for {self.post.title}"
@@ -172,8 +170,11 @@ class PostMedia(models.Model):
         first_media = self.media.filter(image__isnull=False).first()
         if first_media and first_media.image:
             return first_media.image.url
+        elif self.image:
+            return self.image.url
         return "https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/default.jpg"
 
+        
 class SiteSettings(models.Model):
     banner_text = models.CharField(max_length=255, default="Welcome to SMARTPACE - Your Science Hub!")
     announcement = models.TextField(blank=True, null=True)

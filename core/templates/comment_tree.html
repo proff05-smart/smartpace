@@ -1,28 +1,48 @@
-{% for comment in comments %}
-  <div class="comment my-4 ms-{{ depth|default:0 }} border-start ps-3" id="comment-{{ comment.id }}">
-    <div class="d-flex">
-      <a href="{% url 'profile' comment.user.username %}">
-        <img src="{{ comment.user.profile.photo.url|default:'https://via.placeholder.com/40' }}"
-             class="rounded-circle me-2" width="40" height="40" alt="User">
-      </a>
-      <div>
-        <strong><a href="{% url 'profile' comment.user.username %}">{{ comment.user.username }}</a></strong>
-        <small class="text-muted">• {{ comment.created|timesince }} ago</small>
-        <p class="mb-1">{{ comment.body }}</p>
 
+ {% for comment in comments %}
+  <div class="comment border-start ps-2 py-2" id="comment-{{ comment.id }}">
+    <div class="d-flex align-items-start">
+      <a href="{% url 'user_profile' comment.user.username %}">
+        <img src="{{ comment.user.profile.photo.url|default:'https://via.placeholder.com/30' }}"
+             class="rounded-circle me-2" width="30" height="30" alt="User">
+      </a>
+
+      <div>
+        <strong>
+          <a href="{% url 'user_profile' comment.user.username %}">{{ comment.user.username }}</a>
+        </strong>
+
+        {% if comment.user.is_superuser %}
+          <span class="badge bg-danger">Admin</span>
+        {% elif comment.user == post.author %}
+          <span class="badge bg-info text-dark">Author</span>
+        {% endif %}
+
+        <small class="text-muted d-block" title="{{ comment.created|date:'D, d M Y H:i' }}">• {{ comment.created|timesince }} ago</small>
+
+        <p class="mb-1 small">{{ comment.body }}</p>
+
+        <!-- Like Button -->
         <form method="POST" action="{% url 'like_comment' comment.id %}" class="d-inline">
           {% csrf_token %}
-          <button type="submit" class="btn btn-link text-primary p-0 m-0 align-baseline small">👍 Like ({{ comment.likes.count }})</button>
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button type="submit" class="btn btn-sm btn-link text-primary p-0 m-0 small">❤️ {{ comment.likes.count }}</button>
         </form>
 
-        <a class="text-muted small ms-2" role="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{ comment.id }}">💬 Reply</a>
+        {% if request.user.is_authenticated %}
+          <a class="text-muted small ms-2" role="button"
+             data-bs-toggle="collapse" data-bs-target="#replyForm{{ comment.id }}"
+             onclick="setTimeout(() => document.querySelector('#replyForm{{ comment.id }} textarea').focus(), 300);">
+            💬 Reply
+          </a>
+        {% endif %}
 
         {% if comment.user == request.user %}
-          <a href="{% url 'edit_comment' comment.id %}" class="btn btn-link text-warning p-0 m-0 align-baseline small ms-2">✏️ Edit</a>
+          <a href="{% url 'edit_comment' comment.id %}" class="text-warning small ms-2">✏️</a>
           <form method="POST" action="{% url 'delete_comment' comment.id %}" class="d-inline ms-2">
             {% csrf_token %}
             <button type="submit" class="text-danger small border-0 bg-transparent"
-                    onclick="return confirm('Delete this reply?');">🗑️ Delete</button>
+                    onclick="return confirm('Delete this reply?');">🗑️</button>
           </form>
         {% endif %}
 
@@ -30,18 +50,17 @@
         <div class="collapse mt-2" id="replyForm{{ comment.id }}">
           <form method="POST" action="{% url 'reply_to_comment' post.pk comment.id %}">
             {% csrf_token %}
-            <textarea name="body" rows="2" class="form-control mb-2" placeholder="Write your reply..." required></textarea>
-            <button type="submit" class="btn btn-primary btn-sm">Reply</button>
+            <textarea name="body" rows="2" class="form-control form-control-sm mb-2"
+                      placeholder="Write your reply..." required></textarea>
+            <button type="submit" class="btn btn-sm btn-primary">Reply</button>
           </form>
         </div>
 
-        <!-- Recursive Replies -->
+        <!-- Nested Replies -->
         {% if comment.replies.all %}
-          {% include "comment_tree.html" with comments=comment.replies.all depth=depth|add:"4" %}
+          {% include "comment_tree.html" with comments=comment.replies.all %}
         {% endif %}
       </div>
     </div>
   </div>
-{% empty %}
-  <p>No comments yet. Be the first to comment below.</p>
 {% endfor %}

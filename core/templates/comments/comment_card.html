@@ -1,11 +1,11 @@
-<!-- {% load static %}
+ {% load static %}
 {% load humanize %}
 {% with current_depth=depth|default:1 %}
 <div class="mt-2 nested-comment depth-{{ current_depth }} {% if current_depth > 1 %}border-start ps-2 border-1{% endif %}">
 
-  <div class="d-flex align-items-start">
+  <div class="d-flex align-items-start"> 
 
-    <!-- 👤 Avatar -->
+     👤 Avatar 
     <a href="{% url 'user_profile' comment.user.username %}">
       <img src="{% if comment.user.profile.photo %}{{ comment.user.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
            class="rounded-circle me-2"
@@ -76,4 +76,4 @@
     </div>
   </div>
 </div>
-{% endwith %} -->
+{% endwith %} 
