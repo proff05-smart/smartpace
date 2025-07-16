@@ -42,10 +42,13 @@
 
   <!-- 👤 Profile Link -->
   <div class="text-end mt-4">
-<a href="{% url 'user_profile' user.username %}">
-      View Profile
-      <i class="bi bi-person-circle fs-3 text-primary"></i>
-    </a>
+    {% if user.username %}
+      <a href="{% url 'user_profile' user.username %}">
+            View Profile
+            <i class="bi bi-person-circle fs-3 text-primary"></i>
+          </a>
+    {% endif %}
+
   </div>
 
   <!-- 📢 Announcement -->
