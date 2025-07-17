@@ -715,8 +715,6 @@ def like_comment(request, comment_id):
     next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "home"
     return redirect(next_url)
 
-
-
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
@@ -730,6 +728,8 @@ def post_detail(request, pk):
     top_level_comments = comments.filter(parent__isnull=True).order_by('-created')
 
     if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect('login')
         comment_form = CommentForm(request.POST)
         if comment_form.is_valid():
             new_comment = comment_form.save(commit=False)
@@ -835,8 +835,6 @@ def reply_to_comment(request, post_id, parent_id):
             if parent_comment.user != request.user:
                 Notification.objects.create(
                     user=parent_comment.user,
-                    message=f"{request.user.username} replied to your comment.",
-                    url=f"/post/{post.id}#comment-{reply.id}",
                     tone="reply_sound.mp3",
                 )
 
