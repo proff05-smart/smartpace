@@ -816,7 +816,6 @@ def user_profile(request, username):
             "quiz_attempts": quiz_attempts,
         },
     )
-
 @login_required
 def reply_to_comment(request, post_id, parent_id):
     parent_comment = get_object_or_404(Comment, id=parent_id)
@@ -834,12 +833,15 @@ def reply_to_comment(request, post_id, parent_id):
 
             if parent_comment.user != request.user:
                 Notification.objects.create(
-                    user=parent_comment.user,
-                    tone="reply_sound.mp3",
+                    user=parent_comment.user,        
+                    sender=request.user,             
+                    verb="replied to",               
+                    post=post,
+                    comment=reply,                   
+                    tone="info"                      
                 )
 
             return redirect(f"{reverse('post_detail', kwargs={'pk': post.id})}#comment-{reply.id}")
-
 
     return redirect("home", pk=post.id)
 
