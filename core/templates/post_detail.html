@@ -56,11 +56,20 @@
   <!-- 🔹 Post Image -->
   <img src="{% if post.image %}{{ post.image.url }}{% elif post.get_first_image_url %}{{ post.get_first_image_url }}{% else %}https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/default.jpg{% endif %}"
        alt="{{ post.title }}" class="img-fluid rounded mb-3">
-
-  <!-- 🔹 Post Content -->
-  <div class="mb-4">
-    {{ post.content|safe }}
+<!-- 🔹 Collapsible Post Content -->
+<div class="mb-4">
+  <p>
+    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#postContent" aria-expanded="false" aria-controls="postContent">
+      Show/Hide Post Content
+    </button>
+  </p>
+  <div class="collapse show" id="postContent">
+    <div class="card card-body border-0">
+      {{ post.content|safe }}
+    </div>
   </div>
+</div>
+
 
 
   <a href="{% url 'profile_dashboard' %}">

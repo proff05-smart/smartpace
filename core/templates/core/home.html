@@ -106,15 +106,19 @@
       {% endfor %}
     </div>
   </div>
+<!-- 📰 Blog Posts -->
+{% if posts %}
+  {% for post in posts %}
+    <div class="card mb-5 shadow">
+      {% if post.image %}
+        <img src="{{ post.image.url }}"
+             class="card-img-top img-fluid rounded-top"
+             alt="{{ post.title|escape }}"
+             style="height: 180px; object-fit: cover; width: 100%;">
+      {% endif %}
+      <div class="card-body">
+        <!-- Your post title, excerpt, etc. -->
 
-  <!-- 📰 Blog Posts -->
-  {% if posts %}
-    {% for post in posts %}
-      <div class="card mb-5 shadow">
-        {% if post.image %}
-          <img src="{{ post.image.url }}" class="card-img-top img-fluid" alt="{{ post.title|escape }}">
-        {% endif %}
-        <div class="card-body">
 
           <!-- Post Meta -->
           <div class="text-muted mb-3 d-flex flex-wrap align-items-center gap-2">
@@ -162,7 +166,16 @@
 {% endif %}
 
           <!-- Post Content -->
-          <div class="mb-4">{{ post.content|safe }}</div>
+<div class="mb-3">
+  <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#content{{ post.id }}" aria-expanded="false" aria-controls="content{{ post.id }}">
+    Show/Hide Preview
+  </button>
+  <div class="collapse mt-2" id="content{{ post.id }}">
+    <div class="card card-body border-0 p-0">
+      {{ post.excerpt|safe }}  
+    </div>
+  </div>
+</div>
 
           <!-- Author Controls -->
           {% if user == post.author %}
