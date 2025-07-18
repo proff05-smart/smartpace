@@ -392,6 +392,52 @@
     }
   }
 </style>
+<script>
+    let lastNotificationCount = 0;
+    let audioUnlocked = false;
+
+    // Unlock audio on first user interaction
+    document.addEventListener('click', () => {
+        const audio = document.getElementById("notification-sound");
+        if (!audioUnlocked) {
+            audio.play().then(() => {
+                audio.pause();         // Stop immediately
+                audio.currentTime = 0; // Reset to start
+                audioUnlocked = true;
+                console.log("✅ Audio unlocked by user click");
+            }).catch(err => {
+                console.warn("🚫 Autoplay unlock failed:", err);
+            });
+        }
+    });
+
+    function fetchNotifications() {
+        fetch("/notifications/json/")
+            .then(response => response.json())
+            .then(data => {
+                const currentCount = data.unread_count;
+                if (currentCount > lastNotificationCount) {
+                    const audio = document.getElementById("notification-sound");
+                    if (audioUnlocked) {
+                        audio.play().catch(e => {
+                            console.warn("Play blocked:", e);
+                        });
+                    } else {
+                        console.log("🔇 Audio locked — user hasn't interacted yet.");
+                    }
+                }
+                lastNotificationCount = currentCount;
+            })
+            .catch(error => console.error("❌ Notification fetch error:", error));
+    }
+
+    // Check every 10 seconds
+    setInterval(fetchNotifications, 10000);
+</script>
+
+<button onclick="document.getElementById('notification-sound').play()">🔔 Test Notification Sound</button>
+
 
 </body>
 </html>
+

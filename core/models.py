@@ -242,6 +242,7 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
     timestamp = models.DateTimeField(default=now)
     tone = models.CharField(max_length=20, choices=[('info', 'Info'), ('success', 'Success'), ('warning', 'Warning'), ('danger', 'Danger')], default='info')
+    sound = CloudinaryField('sound', blank=True, null=True)  # ✅ Add this
 
     def __str__(self):
         return f"{self.sender} {self.verb} your post"

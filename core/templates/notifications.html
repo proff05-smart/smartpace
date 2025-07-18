@@ -8,9 +8,28 @@
       <li class="list-group-item{% if not notify.is_read %} list-group-item-info{% endif %}">
         <strong>👤 {{ notify.sender.username }}</strong> {{ notify.verb }} 📌
         <small class="text-muted float-end">⏰ {{ notify.timestamp|naturaltime }}</small>
+
+        {# 🟡 Optional audio player for this notification #}
+        {% if notify.sound %}
+          <audio id="sound-{{ notify.id }}" src="{{ notify.sound.url }}" preload="auto"></audio>
+          <button class="btn btn-sm btn-outline-secondary mt-1" onclick="document.getElementById('sound-{{ notify.id }}').play()">🔊 Play Tone</button>
+        {% endif %}
       </li>
     {% empty %}
       <li class="list-group-item">❌ No notifications.</li>
     {% endfor %}
   </ul>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.onload = function () {
+    const firstUnread = document.querySelector('audio[id^="sound-"]');
+    if (firstUnread) {
+      firstUnread.play().catch(err => {
+        console.log("Autoplay blocked:", err);
+      });
+    }
+  };
+</script>
 {% endblock %}
