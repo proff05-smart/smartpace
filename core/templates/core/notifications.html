@@ -1,14 +1,91 @@
-{% load cloudinary %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h5 class="mb-0">Notifications</h5>
+  <span id="notification-badge" class="badge bg-danger">{{ unread_count }}</span>
+</div>
 
-{% for notification in notifications %}
-  <div class="notification d-flex align-items-center mb-2">
-    {% if notification.sender.profile.photo %}
-      <img src="{{ notification.sender.profile.photo.url }}" alt="Profile Photo" class="rounded-circle me-2" width="40" height="40">
-    {% else %}
-      <img src="https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v123456789/default_profile.png" alt="Default Profile" class="rounded-circle me-2" width="40" height="40">
-    {% endif %}
-    <div>
-      <strong>{{ notification.sender.username }}</strong> {{ notification.verb }}
+<div id="notification-container">
+  {% for notification in notifications %}
+    <div class="notification d-flex align-items-center mb-3 p-2 border rounded shadow-sm" data-id="{{ notification.id }}">
+      <img src="{% if notification.sender.profile.photo %}{{ notification.sender.profile.photo.url }}{% else %}https://res.cloudinary.com/dwp0xtvyb/image/upload/v123456789/default_profile.png{% endif %}" 
+           alt="{{ notification.sender.username }}" 
+           class="rounded-circle me-3" width="50" height="50">
+      <div>
+        <a href="#" class="text-decoration-none fw-bold text-primary mark-read" data-url="{% url 'mark_notification_read' notification.id %}">
+          {{ notification.sender.username }} {{ notification.verb }}
+        </a>
+        <br>
+        <small class="text-muted">{{ notification.created_at|naturaltime }}</small>
+      </div>
     </div>
-  </div>
-{% endfor %}
+  {% empty %}
+    <p class="text-muted">No notifications yet.</p>
+  {% endfor %}
+</div>
+
+<div class="text-center mt-3">
+  <button id="load-more-btn" class="btn btn-outline-primary btn-sm">Load more</button>
+</div>
+
+<script>
+  function fetchNotifications(page = 1, append = false) {
+    fetch(`/notifications/json/?page=${page}`)
+      .then(response => response.json())
+      .then(data => {
+        const container = document.getElementById("notification-container");
+        const badge = document.getElementById("notification-badge");
+
+        if (!append) container.innerHTML = "";
+
+        if (data.notifications.length === 0 && !append) {
+          container.innerHTML = "<p class='text-muted'>No notifications yet.</p>";
+          return;
+        }
+
+        data.notifications.forEach(n => {
+          const html = `
+            <div class="notification d-flex align-items-center mb-3 p-2 border rounded shadow-sm" data-id="${n.id}">
+              <img src="${n.photo}" alt="profile" class="rounded-circle me-3" width="50" height="50">
+              <div>
+                <a href="${n.url}" class="text-decoration-none fw-bold text-primary mark-read" data-url="/notifications/mark-read/${n.id}/">
+                  ${n.message}
+                </a>
+                <br><small class="text-muted">${n.tone || ''}</small>
+              </div>
+            </div>`;
+          container.insertAdjacentHTML('beforeend', html);
+        });
+
+        badge.innerText = data.unread_count || 0;
+      })
+      .catch(err => console.error("Notification fetch error:", err));
+  }
+
+  // Auto-refresh every 30 seconds
+  setInterval(() => fetchNotifications(1), 30000);
+
+  // Mark as read on click
+  document.addEventListener("click", function (e) {
+    if (e.target.classList.contains("mark-read")) {
+      e.preventDefault();
+      const url = e.target.dataset.url;
+      const parent = e.target.closest(".notification");
+
+      fetch(url)
+        .then(() => {
+          parent.classList.add("bg-light");
+          e.target.classList.remove("fw-bold", "text-primary");
+          e.target.classList.add("text-muted");
+        });
+    }
+  });
+
+  // Load more notifications (pagination)
+  let currentPage = 1;
+  document.getElementById("load-more-btn").addEventListener("click", () => {
+    currentPage += 1;
+    fetchNotifications(currentPage, true);
+  });
+
+  // Initial fetch in case template is empty
+  fetchNotifications(1);
+</script>
