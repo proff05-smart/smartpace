@@ -2,6 +2,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}SMARTPACE{% endblock %}</title>
@@ -67,6 +69,9 @@
         <li class="nav-item"><a class="nav-link" href="{% url 'home' %}"><i class="bi bi-house-door"></i> Home</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'quiz_history' %}"><i class="bi bi-journal-text"></i> Quiz History</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'quiz_leaderboard' %}"><i class="bi bi-trophy"></i> Leaderboard</a></li>
+<a class="nav-link" href="{% url 'most_attempted_categories' %}">
+  <i class="bi bi-bar-chart-line"></i> Analytics
+</a>
         <li class="nav-item"><a class="nav-link" href="{% url 'support' %}"><i class="bi bi-cash-coin"></i> Support</a></li>
       </ul>
 
@@ -77,6 +82,17 @@
               <i class="bi bi-plus-circle me-1"></i> Add Post
             </a>
           </li>
+{% if user.is_staff or user.is_superuser %}
+  <li class="nav-item">
+    <a class="nav-link" href="{% url 'learner_analytics' %}">📚 Learner Analytics</a>
+  </li>
+{% endif %}
+
+<!-- <a href="{% url 'learner_analytics' %}" class="btn btn-primary">
+  View Learner Analytics
+</a> -->
+
+
 
           <!-- Notifications -->
           <li class="nav-item dropdown me-2">
@@ -435,6 +451,9 @@
     setInterval(fetchNotifications, 10000);
 </script>
 
+<ul class="navbar-nav">
+  
+</ul>
 
 
 </body>

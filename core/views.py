@@ -153,7 +153,7 @@ def post_list_view(request):
     if query:
         posts = posts.filter(title__icontains=query)
 
-    paginator = Paginator(posts, 12)  
+    paginator = Paginator(posts, 25)  
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -543,7 +543,7 @@ def quiz_result(request):
     )
 from django.db.models import Sum, Count
 from django.contrib.auth.models import User
-
+@login_required
 def quiz_leaderboard(request):
     leaderboard = (
         User.objects.filter(quizresult__isnull=False)
@@ -587,7 +587,7 @@ def quiz_leaderboard(request):
     return render(request, "quiz/leaderboard.html", {"leaderboard": leaderboard_with_badges})
 
 
-
+@login_required
 
 def quiz_history(request):
     raw_history = QuizResult.objects.filter(user=request.user).order_by("-date_taken")
@@ -854,6 +854,7 @@ def is_root(self):
     return self.parent is None
 
 
+@login_required
 # admin_views.py
 def user_analytics(request):
     user_data = User.objects.annotate(
@@ -872,19 +873,31 @@ def user_analytics(request):
 def unread_notifications_json(request):
     notifications = Notification.objects.filter(
         user=request.user, is_read=False
-    ).select_related("sender", "post")
+    ).select_related("sender__profile", "post")
 
     data = []
     for n in notifications:
-        message = (
-            f"{n.sender.username} {n.verb} your post '{n.post.title if n.post else ''}'"
-        )
-        url = reverse("mark_notification_as_read", args=[n.id])  # 🔁 this view will mark as read
+        # Prevent duplicate 'your post'
+        message = f"{n.sender.username} {n.verb}"
+        if n.post and "your post" not in n.verb:
+            message += f" your post '{n.post.title}'"
+
+        # Safe handling of photo
+        default_photo_url = "https://res.cloudinary.com/dwp0xtvyb/image/upload/v123456789/default_profile.png"
+        try:
+            if n.sender.profile.photo:
+                photo_url = n.sender.profile.photo.url
+            else:
+                photo_url = default_photo_url
+        except Exception:
+            photo_url = default_photo_url
+
         data.append({
             "id": n.id,
             "message": message,
-            "url": url,
+            "url": reverse("mark_notification_as_read", args=[n.id]),
             "tone": n.tone,
+            "photo": photo_url,
         })
 
     return JsonResponse(data, safe=False)
@@ -900,7 +913,7 @@ def unread_notifications(request):
     """
     notifications = Notification.objects.filter(
         user=request.user, is_read=False
-    ).select_related("sender", "post")
+    ).select_related("sender__profile", "post")
 
     # Mark them as read after displaying
     notifications.update(is_read=True)
@@ -915,32 +928,37 @@ def unread_notifications(request):
 # =============================
 @login_required
 def all_notifications(request):
- 
     notifications = (
         Notification.objects.filter(user=request.user)
-        .select_related("sender", "post")
+        .select_related("sender__profile", "post")  
         .order_by("-created_at")
     )
     return render(request, "notifications/all.html", {"notifications": notifications})
 
-
 # =============================
 # ☑️ MARK SINGLE NOTIFICATION AS READ
 # =============================
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+
 @login_required
 def mark_notification_as_read(request, notification_id):
     """
-    Mark a specific notification as read and redirect to related post or fallback.
+    Mark a specific notification as read and redirect to the related post or a fallback page.
     """
     notification = get_object_or_404(
         Notification, id=notification_id, user=request.user
     )
-    notification.is_read = True
-    notification.save()
 
+    if not notification.is_read:
+        notification.is_read = True
+        notification.save()
+
+    # Redirect to related post or fallback
     redirect_url = (
         notification.post.get_absolute_url()
-        if notification.post
+        if hasattr(notification, 'post') and notification.post
         else reverse("unread_notifications")
     )
     return redirect(redirect_url)
@@ -1027,3 +1045,41 @@ def add_reply_ajax(request, post_pk, parent_id):
             return JsonResponse({"success": True, "reply_html": html})
 
     return JsonResponse({"success": False}, status=400)
+
+
+
+
+from django.db.models import Count
+from django.shortcuts import render
+from .models import QuizCategory, QuizResult
+@login_required
+def most_attempted_categories(request):
+    category_stats = (
+        QuizCategory.objects
+        .annotate(attempts=Count('quizresult'))
+        .order_by('-attempts')
+    )
+    return render(request, 'analytics/most_attempted.html', {'category_stats': category_stats})
+
+
+
+from django.contrib.auth.decorators import user_passes_test
+from django.db.models import Count, Avg
+from django.shortcuts import render
+from django.contrib.auth import get_user_model
+from core.models import QuizResult
+
+User = get_user_model()
+
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
+def learner_analytics(request):
+    learners = (
+        User.objects
+        .filter(quizresult__isnull=False)
+        .annotate(
+            total_attempts=Count('quizresult'),
+            average_score=Avg('quizresult__score')
+        )
+        .order_by('-total_attempts')
+    )
+    return render(request, 'analytics/learner_analytics.html', {'learners': learners})

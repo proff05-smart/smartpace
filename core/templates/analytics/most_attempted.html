@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Most Attempted Quiz Categories</h2>
+
+  <table class="table table-bordered table-hover">
+    <thead class="thead-dark">
+      <tr>
+        <th>Rank</th>
+        <th>Category</th>
+        <th>Attempts</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for category in category_stats %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ category.name }}</td>
+          <td>{{ category.attempts }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="3">No quiz attempts found.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

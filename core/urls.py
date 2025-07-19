@@ -1,6 +1,8 @@
 from django.urls import path
 from django.contrib.auth.views import LoginView, LogoutView
 from . import views
+from .views import most_attempted_categories
+from .views import learner_analytics
 
 urlpatterns = [
     # Home
@@ -56,6 +58,9 @@ urlpatterns = [
     path('quiz/leaderboard/', views.quiz_leaderboard, name='quiz_leaderboard'),
     path('quiz/history/', views.quiz_history, name='quiz_history'),
     path('quizzes/', views.quiz_list_view, name='quiz_list'),
+    path('analytics/most-attempted/', most_attempted_categories, name='most_attempted_categories'),
+    path('analytics/learners/', learner_analytics, name='learner_analytics'),
+
 
     # Notifications
     path('notifications/', views.notifications, name='notifications'),
@@ -66,6 +71,10 @@ urlpatterns = [
     path('notifications/all/', views.all_notifications, name='all_notifications'),
     path('notifications/mark/<int:notification_id>/', views.mark_notification_as_read, name='mark_notification_as_read_alt'),
     path('notifications/mark_all/', views.mark_all_notifications_as_read, name='mark_all_notifications_as_read_alt'),
+    path('notifications/json/', views.unread_notifications_json, name='unread_notifications_json'),
+    #path('notifications/mark-read/<int:pk>/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/mark-read/<int:pk>/', views.mark_notification_as_read, name='mark_notification_read'),
+
 
     # Utilities
     path('search/', views.search_view, name='search'),

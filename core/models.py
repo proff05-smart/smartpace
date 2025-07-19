@@ -43,6 +43,7 @@ class Post(models.Model):
     youtube_url = models.URLField(blank=True, null=True)
     likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
     created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
     is_pinned = models.BooleanField(default= False)
     image = CloudinaryField('image', blank=True, null=True,resource_type="image")
@@ -229,26 +230,49 @@ class DailyFact(models.Model):
         return f"Fact for {self.date}"
 
 
-
-### to edit 
+from django.db import models
+from django.contrib.auth.models import User
 from django.utils.timezone import now
+from cloudinary.models import CloudinaryField
 
 class Notification(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')  # Receiver
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_notifications')  # Actor
-    verb = models.CharField(max_length=255)  # e.g., "liked", "commented on"
-    post = models.ForeignKey('Post', on_delete=models.CASCADE, null=True, blank=True)
-    comment = models.ForeignKey('Comment', on_delete=models.CASCADE, null=True, blank=True)
+    
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='notifications'
+    )  
+    sender = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='sent_notifications'
+    )  
+
+   
+    verb = models.CharField(max_length=255)  
+
+   
+    post = models.ForeignKey('Post', null=True, blank=True, on_delete=models.CASCADE)
+    comment = models.ForeignKey('Comment', null=True, blank=True, on_delete=models.CASCADE)
+    
+
+   
     is_read = models.BooleanField(default=False)
     timestamp = models.DateTimeField(default=now)
-    tone = models.CharField(max_length=20, choices=[('info', 'Info'), ('success', 'Success'), ('warning', 'Warning'), ('danger', 'Danger')], default='info')
-    sound = CloudinaryField('sound', blank=True, null=True)  # ✅ Add this
+    
+    tone = models.CharField(
+        max_length=20,
+        choices=[
+            ('info', 'Info'),
+            ('success', 'Success'),
+            ('warning', 'Warning'),
+            ('danger', 'Danger'),
+        ],
+        default='info',
+    )
+    sound = CloudinaryField('sound', blank=True, null=True)
 
     def __str__(self):
         return f"{self.sender} {self.verb} your post"
 
     class Meta:
-        ordering = ['-timestamp'] 
+        ordering = ['-timestamp']
 
 
 
