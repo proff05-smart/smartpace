@@ -7,6 +7,8 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.urls import reverse
 from cloudinary.models import CloudinaryField
+from django_ckeditor_5.fields import CKEditor5Field
+
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -39,7 +41,7 @@ class Post(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True, related_name='posts')
     title = models.CharField(max_length=200)
-    content = models.TextField()
+    content = CKEditor5Field('Content', config_name='default')
     youtube_url = models.URLField(blank=True, null=True)
     likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
     created = models.DateTimeField(auto_now_add=True)

@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'core',
     'embed_video',
+   'django_ckeditor_5',
+
 ]
 
 MIDDLEWARE = [
@@ -151,3 +153,36 @@ cloudinary.config(
   api_secret = 'DswXg8Az1tB_Z-ULVi2QIWFVo9M',
   secure = True
 )
+CKEDITOR_5_CONFIGS = {
+    'default': {
+        'toolbar': [
+            'heading', '|', 'bold', 'italic', 'link', 'underline', '|',
+            'bulletedList', 'numberedList', 'blockQuote', '|',
+            'imageUpload', 'insertTable', 'mediaEmbed', '|',
+            'undo', 'redo'
+        ],
+        'image': {
+            'toolbar': [
+                'imageTextAlternative', 'imageStyle:full', 'imageStyle:side'
+            ]
+        },
+        'table': {
+            'contentToolbar': [
+                'tableColumn', 'tableRow', 'mergeTableCells'
+            ]
+        },
+        'language': 'en',
+
+       
+        'htmlSupport': {
+            'allow': [
+                {
+                    'name': '.*',
+                    'attributes': True, 
+                    'classes': True,     
+                    'styles': False    
+                }
+            ]
+        }
+    }
+}
