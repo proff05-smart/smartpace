@@ -145,22 +145,29 @@ def post_create_view(request):
         "core/post_create.html",
         {"post_form": post_form, "media_formset": media_formset},
     )
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from .models import Post
 
 def post_list_view(request):
     query = request.GET.get("q")
-    posts = Post.objects.all().order_by("-created")
+    post_list = Post.objects.all().order_by("-created")
 
     if query:
-        posts = posts.filter(title__icontains=query)
+        post_list = post_list.filter(title__icontains=query)
 
-    paginator = Paginator(posts, 25)  
+    paginator = Paginator(post_list, 25)  
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
     return render(
         request,
         "core/post_list.html",
-        {"posts": page_obj, "page_obj": page_obj},  
+        {
+            "posts": page_obj,        
+            "page_obj": page_obj,     
+            "query": query,           
+        },
     )
 
 
