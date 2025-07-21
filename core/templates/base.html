@@ -267,6 +267,24 @@
 
 
 
+<style>
+  /* Default light mode styling */
+  .quiz-explanation {
+    background-color: #f8f9fa;
+    color: #212529;
+    padding: 1rem;
+    border-left: 4px solid #0d6efd;
+    border-radius: 5px;
+    margin-top: 1rem;
+  }
+
+  /* Dark mode support */
+  body[data-bs-theme="dark"] .quiz-explanation {
+    background-color: #212529;
+    color: #f8f9fa;
+    border-left-color: #0dcaf0; /* Optional: use a different color in dark */
+  }
+</style>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
