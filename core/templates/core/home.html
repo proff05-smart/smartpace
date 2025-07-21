@@ -1,20 +1,35 @@
 {% extends 'base.html' %}
 {% load static youtube_tags humanize widget_tweaks %}
-
-
 {% block content %}
 <div class="container my-5 px-2 px-sm-4">
+  <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
+  🌙 Dark Mode
+</button>
+<!-- 🌟 Enhanced Welcome Banner -->
+<div class="welcome-banner text-white text-center p-5 rounded-4 shadow-lg position-relative overflow-hidden"
+     style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); font-family: 'Poppins', sans-serif;">
+  
+  <h1 class="display-4 fw-bold animate__animated animate__fadeInDown">
+    {{ settings.site_name|default:"SMARTPACE" }}
+  </h1>
 
-  <!-- 🌟 Welcome Banner -->
-  <div class="bg-primary text-white text-center p-5 rounded shadow mb-5 position-relative overflow-hidden">
-    <h1 class="display-4">{{ settings.site_name|default:"SMARTPACE" }}</h1>
-    <p class="lead">{{ settings.tagline|default:"Empowering Minds Through Science" }}</p>
-    <button id="modeToggle" class="btn btn-light position-absolute top-0 end-0 m-3" aria-label="Toggle dark mode">🌙</button>
+  <p class="lead mt-2 animate__animated animate__fadeInUp">
+    {{ settings.tagline|default:"Empowering Minds Through Science" }}
+  </p>
+
+  <div class="d-flex justify-content-center align-items-center flex-wrap gap-3 mt-4 text-center">
+    <span class="badge bg-light text-dark fs-6 px-3 py-2 rounded-pill shadow-sm">
+      🌟 Today’s Quote: “{{ settings.daily_quote|default:"Science is the poetry of reality."|escape }}”
+    </span>
+    <span class="text-light fs-6" id="live-clock" aria-label="Current Time"></span>
+  </div>
+</div>
+    <!-- Decorative Animated Shapes -->
     <div class="animated-shape shape1"></div>
     <div class="animated-shape shape2"></div>
     <div class="animated-shape shape3"></div>
   </div>
-
+</div>
   <!-- 🕒 Clock and 📅 Calendar -->
   <div class="d-flex justify-content-center align-items-start flex-wrap gap-4 mb-5">
     <!-- Current Time -->
@@ -43,15 +58,6 @@
     </div>
   </div>
 
-  <!-- 👤 Profile Link -->
-  {% if user.username %}
-  <div class="text-end mt-4">
-    <a href="{% url 'user_profile' user.username %}">
-      View Profile <i class="bi bi-person-circle fs-3 text-primary"></i>
-    </a>
-  </div>
-  {% endif %}
-
   <!-- 📢 Announcement -->
   <div class="text-center mb-5">
     <div class="btn btn-warning btn-lg fw-bold shadow-sm px-4 py-2" role="alert" aria-live="assertive">
@@ -60,7 +66,7 @@
   </div>
 
   <!-- 🧬 Daily Fact -->
-  {% if daily_fact %}
+  <!-- {% if daily_fact %}
     <div class="alert alert-info text-center fw-semibold shadow-sm mb-4" role="alert">
       🧬 <strong>Daily Fact:</strong> {{ daily_fact.text|escape }}
     </div>
@@ -68,15 +74,16 @@
     <div class="alert alert-warning text-center mb-4" role="alert">
       No daily fact available for today.
     </div>
-  {% endif %}
+  {% endif %} -->
 
-  <!-- 💬 Daily Quote -->
-  <div class="my-4 text-center">
-    <blockquote class="blockquote">
-      <p class="mb-2">“{{ settings.daily_quote|default:"Science is the poetry of reality."|escape }}”</p>
-      <footer class="blockquote-footer">Daily Quote</footer>
-    </blockquote>
+  <!-- 👤 Profile Link
+  {% if user.username %}
+  <div class="text-end mt-4">
+    <a href="{% url 'user_profile' user.username %}">
+      View Profile <i class="bi bi-person-circle fs-3 text-primary"></i>
+    </a>
   </div>
+  {% endif %} -->
 
   <!-- 🧠 Quiz Categories -->
   <div class="my-5">
@@ -222,12 +229,6 @@
       <p class="card-text mt-2">{{ post.content|safe }}
 </p>
     </div>
-
-    <!-- Toggle Button
-    <a class="btn btn-outline-primary btn-sm mt-2" data-bs-toggle="collapse" href="#postContent{{ post.pk }}" role="button" aria-expanded="false" aria-controls="postContent{{ post.pk }}">
-      Read More
-    </a> -->
-
     <!-- Optional: Go to full detail page -->
 {% if post.pk %}
   <a href="{% url 'post_detail' post.pk %}" class="btn btn-link btn-sm mt-2">Full Post</a>
@@ -275,20 +276,6 @@
 {% endif %}
 
 
-  <!-- 📈 Analytics
-  <div class="text-center mt-4">
-    <a href="{% url 'most_attempted_categories' %}" class="btn btn-outline-primary">
-      📈 View Quiz Analytics
-    </a>
-  </div> -->
-
-  <!-- {% if user.is_staff %}
-  <div class="text-center mt-2">
-    <a class="btn btn-outline-danger" href="{% url 'most_attempted_categories' %}">📊 Quiz Analytics (Staff)</a>
-  </div>
-  {% endif %}
-</div> -->
-
 <!-- ⏰ Clock Script -->
 <script>
   function updateClock() {
@@ -303,5 +290,72 @@
   updateClock();
   setInterval(updateClock, 1000);
 </script>
-{% endif %} 
+{% endif %} <style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+  .welcome-banner {
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 80px 30px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  .animated-shape {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    backdrop-filter: none;
+    animation: pulse-move 8s ease-in-out infinite;
+    z-index: 0;
+  }
+
+  .shape1 { top: 10%; left: 5%; animation-delay: 0s; }
+  .shape2 { bottom: 10%; right: 10%; animation-delay: 2s; }
+  .shape3 { top: 60%; left: 70%; animation-delay: 4s; }
+
+  @keyframes pulse-move {
+    0%, 100% {
+      transform: translateY(0) scale(1);
+      opacity: 0.8;
+    }
+    50% {
+      transform: translateY(-25px) scale(1.1);
+      opacity: 1;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const toggleBtn = document.getElementById('theme-toggle');
+    const currentTheme = localStorage.getItem('theme');
+
+    // Set initial button label
+    if (currentTheme === 'dark') {
+      document.body.classList.add('dark-mode');
+      if (toggleBtn) toggleBtn.textContent = '☀️ Light Mode';
+    } else {
+      if (toggleBtn) toggleBtn.textContent = '🌙 Dark Mode';
+    }
+
+    // Toggle theme on click
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        toggleBtn.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+    }
+  });
+</script>
+
+
 {% endblock %}
