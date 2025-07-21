@@ -1,57 +1,51 @@
 {% extends 'base.html' %}
 {% load static youtube_tags humanize widget_tweaks %}
 {% block content %}
-<div class="container my-5 px-2 px-sm-4">
-  <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
-  🌙 Dark Mode
-</button>
-<!-- 🌟 Enhanced Welcome Banner -->
-<div class="welcome-banner text-white text-center p-5 rounded-4 shadow-lg position-relative overflow-hidden"
-     style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); font-family: 'Poppins', sans-serif;">
-  
-  <h1 class="display-4 fw-bold animate__animated animate__fadeInDown">
-    {{ settings.site_name|default:"SMARTPACE" }}
-  </h1>
+<div class="container-fluid px-2 px-sm-4 my-4">
 
-  <p class="lead mt-2 animate__animated animate__fadeInUp">
-    {{ settings.tagline|default:"Empowering Minds Through Science" }}
-  </p>
+  <!-- 🌙 Dark Mode Toggle -->
+  <div class="text-end mb-3">
+    <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">🌙 Dark Mode</button>
+  </div>
 
-  <div class="d-flex justify-content-center align-items-center flex-wrap gap-3 mt-4 text-center">
-    <span class="badge bg-light text-dark fs-6 px-3 py-2 rounded-pill shadow-sm">
-      🌟 Today’s Quote: “{{ settings.daily_quote|default:"Science is the poetry of reality."|escape }}”
-    </span>
-    <span class="text-light fs-6" id="live-clock" aria-label="Current Time"></span>
-  </div>
-</div>
-    <!-- Decorative Animated Shapes -->
-    <div class="animated-shape shape1"></div>
-    <div class="animated-shape shape2"></div>
-    <div class="animated-shape shape3"></div>
-  </div>
-</div>
-  <!-- 🕒 Clock and 📅 Calendar -->
-  <div class="d-flex justify-content-center align-items-start flex-wrap gap-4 mb-5">
-    <!-- Current Time -->
-    <div class="bg-light shadow rounded p-4 text-center" style="min-width: 250px;">
-      <h4 class="fw-semibold mb-3">🕒 Current Time</h4>
-      <div id="clock" class="fs-2 text-success fw-bold" aria-live="polite"></div>
+  <!-- 🌟 Welcome Banner -->
+  <section class="text-white text-center p-5 rounded-4 shadow-lg"
+    style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); font-family: 'Poppins', sans-serif;">
+    <h1 class="display-4 fw-bold">{{ settings.site_name|default:"SMARTPACE" }}</h1>
+    <p class="lead">{{ settings.tagline|default:"Empowering Minds Through Science" }}</p>
+    <div class="d-flex flex-wrap justify-content-center gap-3 mt-3">
+      <span class="badge bg-light text-dark fs-6 px-3 py-2 rounded-pill">
+        🌟 Quote: “{{ settings.daily_quote|default:"Science is the poetry of reality."|escape }}”
+      </span>
+      <span class="fs-6 text-light" id="live-clock" aria-label="Current Time"></span>
     </div>
+  </section>
 
-    <!-- Calendar -->
-    <div class="accordion" id="calendarAccordion" style="min-width: 300px;">
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="headingCalendar">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCalendar" aria-expanded="false" aria-controls="collapseCalendar">
-            📅 View Calendar
-          </button>
-        </h2>
-        <div id="collapseCalendar" class="accordion-collapse collapse" aria-labelledby="headingCalendar">
-          <div class="accordion-body p-0">
-            <iframe
-              title="Kenyan Holidays Calendar"
-              src="{{ settings.calendar_url|default:'https://calendar.google.com/calendar/embed?src=en.kenyan%23holiday%40group.v.calendar.google.com&ctz=Africa%2FNairobi' }}"
-              width="100%" height="300" frameborder="0" scrolling="no" style="border:0;"></iframe>
+  <!-- 🕒 Time and 📅 Calendar -->
+  <div class="row my-5 g-4 justify-content-center">
+    <div class="col-md-4">
+      <div class="bg-light shadow rounded text-center p-4">
+        <h5>🕒 Current Time</h5>
+        <div id="clock" class="fs-3 fw-bold text-success"></div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="accordion shadow" id="calendarAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="calendarHeader">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+              data-bs-target="#calendarBody">
+              📅 View Calendar
+            </button>
+          </h2>
+          <div id="calendarBody" class="accordion-collapse collapse">
+            <div class="accordion-body p-0">
+              <iframe
+                title="Kenyan Holidays Calendar"
+                src="{{ settings.calendar_url|default:'https://calendar.google.com/calendar/embed?src=en.kenyan%23holiday%40group.v.calendar.google.com&ctz=Africa%2FNairobi' }}"
+                width="100%" height="300" frameborder="0" scrolling="no" style="border:0;">
+              </iframe>
+            </div>
           </div>
         </div>
       </div>
@@ -60,220 +54,144 @@
 
   <!-- 📢 Announcement -->
   <div class="text-center mb-5">
-    <div class="btn btn-warning btn-lg fw-bold shadow-sm px-4 py-2" role="alert" aria-live="assertive">
+    <div class="alert alert-warning fs-5 fw-semibold shadow-sm d-inline-block px-4 py-2" role="alert">
       📢 {{ settings.announcement|default:"No announcements today." }}
     </div>
   </div>
 
-  <!-- 🧬 Daily Fact -->
-  <!-- {% if daily_fact %}
-    <div class="alert alert-info text-center fw-semibold shadow-sm mb-4" role="alert">
-      🧬 <strong>Daily Fact:</strong> {{ daily_fact.text|escape }}
-    </div>
-  {% else %}
-    <div class="alert alert-warning text-center mb-4" role="alert">
-      No daily fact available for today.
-    </div>
-  {% endif %} -->
-
-  <!-- 👤 Profile Link
-  {% if user.username %}
-  <div class="text-end mt-4">
-    <a href="{% url 'user_profile' user.username %}">
-      View Profile <i class="bi bi-person-circle fs-3 text-primary"></i>
-    </a>
-  </div>
-  {% endif %} -->
-
   <!-- 🧠 Quiz Categories -->
-  <div class="my-5">
+  {% if quiz_categories %}
+  <section class="my-5">
     <h3 class="text-center mb-4">🧠 Quiz Categories</h3>
-    <ul class="nav nav-tabs justify-content-center mb-3" id="quizTab" role="tablist">
+    <ul class="nav nav-tabs justify-content-center mb-3">
       {% for category in quiz_categories %}
-      <li class="nav-item" role="presentation">
-        <button class="nav-link {% if forloop.first %}active{% endif %}"
-                id="tab{{ category.id }}-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#tab{{ category.id }}"
-                type="button"
-                role="tab"
-                aria-controls="tab{{ category.id }}"
-                aria-selected="{{ forloop.first|yesno:'true,false' }}">
-          {{ category.name|escape }}
+      <li class="nav-item">
+        <button class="nav-link {% if forloop.first %}active{% endif %}" data-bs-toggle="tab"
+          data-bs-target="#tab{{ category.id }}">
+          {{ category.name }}
         </button>
       </li>
       {% endfor %}
     </ul>
-
     <div class="tab-content">
       {% for category in quiz_categories %}
-      <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="tab{{ category.id }}" role="tabpanel">
-        <div class="text-center p-3 border rounded bg-light">
-          <h5>{{ category.name|escape }}</h5>
+      <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="tab{{ category.id }}">
+        <div class="text-center bg-light rounded shadow p-4">
+          <h5>{{ category.name }}</h5>
           <a href="{% url 'start_quiz' category.id %}" class="btn btn-success mt-2">
-            Start Quiz {% if category.quiz_set.count %} ({{ category.quiz_set.count }}){% endif %}
+            Start Quiz ({{ category.quiz_set.count }})
           </a>
         </div>
       </div>
       {% endfor %}
     </div>
-  </div>
+  </section>
+  {% endif %}
 
   <!-- 📰 Blog Posts -->
   {% if posts %}
-    {% for post in posts %}
+  {% for post in posts %}
+  <div class="card mb-5 shadow-sm">
     <div class="card-body">
-        <!-- 🧾 Post Meta -->
-        <div class="text-muted mb-3 d-flex flex-wrap align-items-center gap-2">
-          <strong>{{ post.author.username }}</strong>
-          <img src="{% if post.author.profile.photo %}{{ post.author.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}" class="rounded-circle" width="32" height="32" alt="Author">
-           {% if post.author.profile.role %}
-      {% with role=post.author.profile.role|lower %}
-        <span class="badge
-          {% if role == 'teacher' %}bg-primary
-          {% elif role == 'admin' %}bg-danger
-          {% elif role == 'student' %}bg-success
-          {% else %}bg-secondary
-          {% endif %}">
-          {{ post.author.profile.role }}
-        </span>
-      {% endwith %}
-    {% endif %}
-  </div>
-
-
-
-  
-  <!-- 🕒 Created/Updated Time & Category -->
-  <div class="text-muted mb-2">
-    <i class="bi bi-clock"></i>
-    <span>{{ post.created|date:"F j, Y, g:i a" }}</span>
-    {% if post.updated > post.created %}
-      <!-- <span>(Updated {{ post.updated|naturaltime }})</span> -->
-    {% endif %}
-    <span>• Category: <em>{{ post.category.name }}</em></span>
-  </div>
-</div>
-
-
-         <h4 class="mt-4">{{ post.title }}</h4>
-
-   <div class="card mb-5 shadow">
-  {% if post.image %}
- <img 
-  src="{{ post.image.url }}" 
-  class="card-img-top img-fluid rounded-top" 
-  alt="{{ post.title|escape }}">
-  {% endif %}
-</div>
-
-
-      
-
-        <!-- 🔹 Media -->
-       {% if post.video %}
-  <!-- Uploaded video -->
-  <video width="100%" controls class="mb-3 rounded">
-    <source src="{{ post.video.url }}" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-
-{% elif post.youtube_url and "youtube.com" in post.youtube_url or "youtu.be" in post.youtube_url %}
-  <!-- YouTube embedded video -->
-  <div class="ratio ratio-16x9 mb-3">
-    <iframe
-      src="https://www.youtube.com/embed/{{ post.youtube_url|cut:'https://youtu.be/'|cut:'https://www.youtube.com/watch?v=' }}"
-      title="YouTube video player"
-      allowfullscreen class="border-0">
-    </iframe>
-  </div>
-{% endif %}
-
-        
-
-        <!-- ✏️ Edit/Delete -->
-        {% if user == post.author %}
-        <div class="mb-2">
-          <a href="{% url 'edit_post' post.pk %}" class="text-warning small me-2">✏️ Edit</a>
-          <a href="{% url 'delete_post' post.pk %}" class="text-danger small" onclick="return confirm('Are you sure you want to delete this post?')">🗑️ Delete</a>
+      <!-- Post Header -->
+      <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap">
+        <div class="d-flex align-items-center gap-2">
+          <img src="{% if post.author.profile.photo %}{{ post.author.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
+            class="rounded-circle" width="40" height="40" alt="Author">
+          <div>
+            <strong>{{ post.author.username }}</strong><br>
+            {% if post.author.profile.role %}
+              <span class="badge
+                {% if post.author.profile.role|lower == 'teacher' %}bg-primary
+                {% elif post.author.profile.role|lower == 'admin' %}bg-danger
+                {% elif post.author.profile.role|lower == 'student' %}bg-success
+                {% else %}bg-secondary{% endif %}">
+                {{ post.author.profile.role }}
+              </span>
+            {% endif %}
+          </div>
         </div>
-        {% endif %}
+        <div class="text-muted small">
+          <i class="bi bi-clock"></i>
+          {{ post.created|date:"F j, Y" }} • <em>{{ post.category.name }}</em>
+        </div>
+      </div>
 
-     
-<div class="card mb-3 shadow-sm">
-  <div class="card-body">
-    <!-- <h5 class="card-title">{{ post.title }}</h5> -->
-    <p class="text-muted small">{{ post.created_at|date:"F j, Y" }}</p>
+      <!-- Title & Image -->
+      <h4>{{ post.title }}</h4>
+      {% if post.image %}
+      <img src="{{ post.image.url }}" alt="{{ post.title|escape }}" class="img-fluid rounded my-3">
+      {% endif %}
 
-    <!-- Toggle Button -->
-    <a class="btn btn-sm btn-outline-secondary mb-2" data-bs-toggle="collapse" href="#collapseContent{{ post.pk }}" role="button" aria-expanded="false" aria-controls="collapseContent{{ post.pk }}">
-      Show/Hide Content
-    </a>
+      <!-- Media -->
+      {% if post.video %}
+      <video width="100%" controls class="mb-3 rounded">
+        <source src="{{ post.video.url }}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      {% elif post.youtube_url %}
+      <div class="ratio ratio-16x9 mb-3">
+        <iframe class="border-0" allowfullscreen
+          src="https://www.youtube.com/embed/{{ post.youtube_url|cut:'https://youtu.be/'|cut:'https://www.youtube.com/watch?v=' }}">
+        </iframe>
+      </div>
+      {% endif %}
 
-    <!-- Collapsible Content -->
-    <div class="collapse" id="collapseContent{{ post.pk }}">
-<p class="card-text mt-2">{{ post.content|truncatewords_html:50|safe }}</p>
-      <a href="{% url 'post_detail' post.pk %}" class="btn btn-outline-primary btn-sm mt-2">Read More</a>
+      <!-- Excerpt -->
+      <p class="card-text">{{ post.excerpt|linebreaks }}</p>
+
+      <!-- Toggle Full Content -->
+      <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" href="#postContent{{ post.pk }}">
+        Show/Hide Full Content
+      </a>
+      <div class="collapse mt-2" id="postContent{{ post.pk }}">
+        <p class="card-text">{{ post.content|safe }}</p>
+        <a href="{% url 'post_detail' post.pk %}" class="btn btn-outline-primary btn-sm mt-2">Read More</a>
+      </div>
+
+      <!-- Edit/Delete -->
+      {% if user == post.author %}
+      <div class="mt-3">
+        <a href="{% url 'edit_post' post.pk %}" class="text-warning me-3">✏️ Edit</a>
+        <a href="{% url 'delete_post' post.pk %}" class="text-danger"
+          onclick="return confirm('Are you sure you want to delete this post?')">🗑️ Delete</a>
+      </div>
+      {% endif %}
     </div>
   </div>
-</div>
-   {% endfor %}
+  {% endfor %}
 
-
-
-    <!-- Short preview or excerpt -->
-    <p class="card-text">{{ post.excerpt|linebreaks }}</p>
-
-    <!-- Collapsible full content -->
-    <div class="collapse" id="postContent{{ post.pk }}">
-      <p class="card-text mt-2">{{ post.content|safe }}
-</p>
-    </div>
-    <!-- Optional: Go to full detail page -->
-{% if post.pk %}
-  <a href="{% url 'post_detail' post.pk %}" class="btn btn-link btn-sm mt-2">Full Post</a>
-{% endif %}
-  </div>
-</div>
-
-{% if posts.object_list %}
   <!-- 🔄 Pagination -->
   {% if posts.has_other_pages %}
-  <nav aria-label="Page navigation">
+  <nav aria-label="Post pagination">
     <ul class="pagination justify-content-center">
       {% if posts.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ posts.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" aria-label="Previous">
-          &laquo;
-        </a>
-      </li>
+      <li class="page-item"><a class="page-link" href="?page={{ posts.previous_page_number }}">«</a></li>
       {% else %}
-      <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+      <li class="page-item disabled"><span class="page-link">«</span></li>
       {% endif %}
 
       {% for num in posts.paginator.page_range %}
       <li class="page-item {% if posts.number == num %}active{% endif %}">
-        <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}">{{ num }}</a>
+        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
       </li>
       {% endfor %}
 
       {% if posts.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ posts.next_page_number }}{% if query %}&q={{ query }}{% endif %}" aria-label="Next">
-          &raquo;
-        </a>
-      </li>
+      <li class="page-item"><a class="page-link" href="?page={{ posts.next_page_number }}">»</a></li>
       {% else %}
-      <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+      <li class="page-item disabled"><span class="page-link">»</span></li>
       {% endif %}
     </ul>
   </nav>
   {% endif %}
-{% else %}
-  <div class="alert alert-warning text-center mt-5">
-    No blog posts available at the moment.
-  </div>
-{% endif %}
+  {% else %}
+  <p class="text-center">No blog posts available.</p>
+  {% endif %}
+
+</div>
+
+
 
 
 <!-- ⏰ Clock Script -->
@@ -290,7 +208,9 @@
   updateClock();
   setInterval(updateClock, 1000);
 </script>
-{% endif %} <style>
+
+
+<style>
   @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
   .welcome-banner {
@@ -357,5 +277,5 @@
   });
 </script>
 
-
 {% endblock %}
+
