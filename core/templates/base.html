@@ -67,11 +67,28 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
         <li class="nav-item"><a class="nav-link" href="{% url 'home' %}"><i class="bi bi-house-door"></i> Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'quiz_history' %}"><i class="bi bi-journal-text"></i> Quiz History</a></li>
+
+{% if user.is_authenticated and user.is_staff %}
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'quiz_history' %}">
+            <i class="bi bi-journal-text"></i> Quiz History
+        </a>
+    </li>
+{% endif %}
+<li class="nav-item">
+<a class="nav-link" href="{% url 'chat:user_list' %}">
+    <i class="bi bi-chat-dots"></i> Chat
+  </a>
+</li>
+
+
         <li class="nav-item"><a class="nav-link" href="{% url 'quiz_leaderboard' %}"><i class="bi bi-trophy"></i> Leaderboard</a></li>
-<a class="nav-link" href="{% url 'most_attempted_categories' %}">
-  <i class="bi bi-bar-chart-line"></i> Analytics
-</a>
+{% if user.is_staff or user.is_superuser %}
+  <a class="nav-link" href="{% url 'most_attempted_categories' %}">
+    <i class="bi bi-bar-chart-line"></i> Analytics
+  </a>
+{% endif %}
+
         <li class="nav-item"><a class="nav-link" href="{% url 'support' %}"><i class="bi bi-cash-coin"></i> Support</a></li>
       </ul>
 
@@ -87,48 +104,68 @@
     <a class="nav-link" href="{% url 'learner_analytics' %}">📚 Learner Analytics</a>
   </li>
 {% endif %}
+{% endif %}
 
 <!-- <a href="{% url 'learner_analytics' %}" class="btn btn-primary">
   View Learner Analytics
 </a> -->
 
 
+<!-- Notifications -->
+<li class="nav-item me-2">
+  <a class="nav-link position-relative d-flex align-items-center gap-1" href="{% url 'notification_list' %}">
+    <!-- <span>Notifications</span> -->
+    <i class="bi bi-bell fs-5"></i>
+    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notif-count" style="font-size: 0.6rem;">0</span>
+  </a>
+</li>
 
-          <!-- Notifications -->
-          <li class="nav-item dropdown me-2">
-            <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-bell fs-5"></i>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notif-count" style="font-size: 0.6rem;">0</span>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" id="notif-list">
-              <li class="dropdown-item text-muted">Loading notifications...</li>
-            </ul>
-          </li>
 
-          <!-- Profile -->
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-person-circle"></i> {{ user.username }}
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-              {% if user.username %}
-                <li><a class="dropdown-item" href="{% url 'user_profile' username=user.username %}"><i class="bi bi-person-badge me-2"></i> My Profile</a></li>
-              {% endif %}
-              <li>
-                <form method="post" action="{% url 'logout' %}" class="m-0 p-0">
-                  {% csrf_token %}
-                  <button type="submit" class="dropdown-item border-0 bg-transparent">
-                    <i class="bi bi-box-arrow-right me-2"></i> Logout
-                  </button>
-                </form>
-              </li>
-            </ul>
-          </li>
-        {% else %}
-          <li class="nav-item"><a class="nav-link" href="{% url 'login' %}"><i class="bi bi-shield-lock"></i> Login</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'register' %}"><i class="bi bi-pencil-square"></i> Register</a></li>
-        {% endif %}
-      </ul>
+
+<!-- Profile or Auth Links -->
+<ul class="navbar-nav ms-auto">
+
+  {% if user.is_authenticated %}
+<li class="nav-item d-flex align-items-center">
+  <a class="nav-link d-flex align-items-center" href="{% url 'user_profile' username=user.username %}">
+    {% if user.profile.photo %}
+      <img src="{{ user.profile.photo.url }}" alt="Profile Photo"
+           class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;">
+    {% else %}
+      <img src="https://res.cloudinary.com/dwp0xtvyb/image/upload/v1/defaults/avatar.png"
+           alt="Default Photo"
+           class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;">
+    {% endif %}
+    <span class="fw-semibold">{{ user.username }}</span>
+  </a>
+</li>
+
+
+
+
+    <li class="nav-item">
+      <form method="post" action="{% url 'logout' %}" class="d-inline m-0 p-0">
+        {% csrf_token %}
+        <button type="submit" class="nav-link btn btn-link text-decoration-none">
+          <i class="bi bi-box-arrow-right"></i> Logout
+        </button>
+      </form>
+    </li>
+  {% else %}
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'login' %}">
+        <i class="bi bi-shield-lock"></i> Login
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'register' %}">
+        <i class="bi bi-pencil-square"></i> Register
+      </a>
+    </li>
+  {% endif %}
+</ul>
+
+
 
       <!-- Search -->
       <form class="d-flex ms-3" method="GET" action="{% url 'search' %}">
@@ -139,16 +176,20 @@
   </div>
 </nav>
 
+
+
+
 <!-- Main Content -->
-<main class="container mt-4">
-  {% if messages %}
+<main class="container-fluid mt-4 px-0">
+
+{% if messages %}
+  <div id="django-messages" class="d-none">
     {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
+      <div data-message="{{ message|escapejs }}" data-tags="{{ message.tags }}"></div>
     {% endfor %}
-  {% endif %}
+  </div>
+{% endif %}
+
   {% block content %}{% endblock %}
 </main>
 
@@ -166,73 +207,13 @@
 
 <!-- Notification Sound -->
 <audio id="notifSound" src="{% static 'sounds/notification.mp3' %}" preload="auto"></audio>
+<!-- <audio id="notification-sound" src="{% static 'sounds/notification.mp3' %}" preload="auto"></audio> -->
+<ul id="notif-list" class="dropdown-menu"></ul>
 
 <!-- Bootstrap Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Notification Script -->
-<script>
-  const shownNotifs = new Set();
-  const audio = document.getElementById('notifSound');
 
-  function createToast(message, url) {
-    const container = document.getElementById('toast-container');
-    while (container.children.length >= 2) {
-      container.removeChild(container.firstChild);
-    }
-    const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-bg-primary border-0 show mb-2';
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML = `
-      <div class="d-flex">
-        <div class="toast-body">
-          <a href="${url}" class="text-white text-decoration-none">${message}</a>
-        </div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>`;
-    container.appendChild(toast);
-    new bootstrap.Toast(toast, { delay: 5000 }).show();
-  }
-
-  function playNotificationEffects() {
-    if (audio) audio.play().catch(() => {});
-    if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
-  }
-
-  function fetchNotifications() {
-    fetch("{% url 'unread_notifications_json' %}")
-      .then(res => res.json())
-      .then(data => {
-        const notifList = document.getElementById('notif-list');
-        const notifCount = document.getElementById('notif-count');
-        notifList.innerHTML = '';
-        if (data.length === 0) {
-          notifCount.textContent = '0';
-          notifList.innerHTML = '<li class="dropdown-item text-muted">No new notifications</li>';
-        } else {
-          notifCount.textContent = data.length;
-          data.forEach(n => {
-            const id = n.message + n.url;
-            if (!shownNotifs.has(id)) {
-              createToast(n.message, n.url);
-              playNotificationEffects();
-              shownNotifs.add(id);
-            }
-            const li = document.createElement('li');
-            li.className = 'dropdown-item';
-            li.innerHTML = `<a href="${n.url}" class="text-decoration-none">${n.message}</a>`;
-            notifList.appendChild(li);
-          });
-        }
-      })
-      .catch(err => console.error("Notification fetch error:", err));
-  }
-
-  fetchNotifications();
-  setInterval(fetchNotifications, 30000);
-</script>
-
-<!-- Reply Loader -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('click', e => {
@@ -243,23 +224,23 @@
         const url = btn.dataset.url;
         const container = document.getElementById(`replies-container-${commentId}`);
 
-        fetch(url)
-          .then(response => {
-            if (!response.ok) throw new Error('Network error');
-            return response.text();
-          })
-          .then(html => {
-            container.innerHTML = html;
-            btn.remove();
-          })
-          .catch(error => {
-            console.error('Error loading replies:', error);
-            btn.textContent = 'Error loading replies';
-          });
+        if (container && !container.hasChildNodes()) {
+          fetch(url)
+            .then(response => response.text())
+            .then(html => {
+              container.innerHTML = html;
+              btn.remove();  // Optionally remove button after loading
+            })
+            .catch(error => {
+              console.error('Error loading replies:', error);
+              container.innerHTML = '<div class="text-danger">Failed to load replies.</div>';
+            });
+        }
       }
     });
   });
 </script>
+
 
 {% block extra_js %}{% endblock %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -284,6 +265,14 @@
     color: #f8f9fa;
     border-left-color: #0dcaf0; /* Optional: use a different color in dark */
   }
+
+
+body {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+
 </style>
 
 <script>
@@ -426,54 +415,101 @@
     }
   }
 </style>
+<!-- Audio Element -->
+<audio id="notification-sound" src="/static/sounds/notification.mp3" preload="auto"></audio>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container" style="z-index: 9999;"></div>
+
 <script>
-    let lastNotificationCount = 0;
-    let audioUnlocked = false;
+  const shownNotifs = new Set();
+  const audio = document.getElementById("notification-sound");
+  let audioUnlocked = false;
 
-    // Unlock audio on first user interaction
-    document.addEventListener('click', () => {
-        const audio = document.getElementById("notification-sound");
-        if (!audioUnlocked) {
-            audio.play().then(() => {
-                audio.pause();         // Stop immediately
-                audio.currentTime = 0; // Reset to start
-                audioUnlocked = true;
-                console.log("✅ Audio unlocked by user click");
-            }).catch(err => {
-                console.warn("🚫 Autoplay unlock failed:", err);
-            });
-        }
-    });
+  // Unlock audio on first interaction
+  document.addEventListener('click', () => {
+    if (!audioUnlocked && audio) {
+      audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audioUnlocked = true;
+        console.log("🔓 Audio unlocked");
+      }).catch(err => console.warn("🔇 Autoplay blocked:", err));
+    }
+  });
 
-    function fetchNotifications() {
-        fetch("/notifications/json/")
-            .then(response => response.json())
-            .then(data => {
-                const currentCount = data.unread_count;
-                if (currentCount > lastNotificationCount) {
-                    const audio = document.getElementById("notification-sound");
-                    if (audioUnlocked) {
-                        audio.play().catch(e => {
-                            console.warn("Play blocked:", e);
-                        });
-                    } else {
-                        console.log("🔇 Audio locked — user hasn't interacted yet.");
-                    }
-                }
-                lastNotificationCount = currentCount;
-            })
-            .catch(error => console.error("❌ Notification fetch error:", error));
+  function showToast(message, url = '#', tone = 'primary', photoUrl = '') {
+    const container = document.getElementById('toast-container');
+
+    if (container.children.length >= 3) {
+      container.removeChild(container.firstChild);
     }
 
-    // Check every 10 seconds
-    setInterval(fetchNotifications, 10000);
+    const toast = document.createElement('div');
+    toast.className = `toast text-bg-${tone} align-items-center border-0 show mb-2`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+      <div class="d-flex">
+        ${photoUrl ? `<img src="${photoUrl}" class="rounded-circle me-2" style="width:30px;height:30px;" alt="Photo">` : ''}
+        <div class="toast-body">
+          <a href="${url}" class="text-white text-decoration-none">${message}</a>
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    `;
+    container.appendChild(toast);
+    new bootstrap.Toast(toast, { delay: 5000 }).show();
+  }
+
+  function playNotificationEffects() {
+    if (audio && audioUnlocked) {
+      audio.play().catch(err => console.warn("🔇 Audio play failed:", err));
+    }
+    if ("vibrate" in navigator) {
+      navigator.vibrate([200, 100, 200]);
+    }
+  }
+
+  function fetchNotifications() {
+    fetch("{% url 'unread_notifications_json' %}")  
+      .then(res => res.json())
+      .then(data => {
+        const notifList = document.getElementById('notif-list');
+        const notifCount = document.getElementById('notif-count');
+        if (notifList) notifList.innerHTML = '';
+
+        if (notifCount) notifCount.textContent = data.length;
+
+        if (data.length === 0 && notifList) {
+          notifList.innerHTML = '<li class="dropdown-item text-muted">No new notifications</li>';
+        }
+
+        data.forEach(n => {
+          const uniqueId = n.message + n.url;
+          if (!shownNotifs.has(uniqueId)) {
+            showToast(n.message, n.url, n.tone || 'primary', n.photo || '');
+            playNotificationEffects();
+            shownNotifs.add(uniqueId);
+          }
+
+          if (notifList) {
+            const li = document.createElement('li');
+            li.className = 'dropdown-item';
+            li.innerHTML = `<a href="${n.url}" class="text-decoration-none">${n.message}</a>`;
+            notifList.appendChild(li);
+          }
+        });
+      })
+      .catch(err => console.error("❌ Notification fetch error:", err));
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    fetchNotifications();
+    setInterval(fetchNotifications, 30000); // 
+  });
 </script>
 
-<ul class="navbar-nav">
-  
-</ul>
 
 
 </body>
 </html>
-

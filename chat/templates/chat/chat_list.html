@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-3">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <span>Chat with {{ other_user.username }}</span>
+      <a href="{% url 'chat_list' %}" class="btn btn-sm btn-light">← Chats</a>
+    </div>
+    
+    <!-- Chat Display Area -->
+    <div class="card-body" id="chat-box" style="height: 400px; overflow-y: auto;">
+      {% for msg in messages %}
+        <div class="{% if msg.sender == user %}text-end{% else %}text-start{% endif %} mb-2">
+          <div class="{% if msg.sender == user %}bg-success text-white{% else %}bg-light border{% endif %} p-2 rounded">
+            {{ msg.content }}
+            <div class="small {% if msg.sender == user %}text-light{% else %}text-muted{% endif %}">
+              {{ msg.timestamp|date:"M d, H:i" }}
+              {% if not msg.is_read and msg.receiver == user %}
+                <span class="badge bg-warning">Unread</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Chat Input Area -->
+    <div class="card-footer">
+      <!-- Message Sent Notification -->
+      <div id="send-notification" class="text-success small mb-2" style="display: none;">
+        ✅ Message sent
+      </div>
+
+      <form id="chat-form">
+        {% csrf_token %}
+        <div class="input-group">
+          <input type="text" id="chat-message-input" class="form-control" placeholder="Type a message..." required>
+          <button class="btn btn-primary" id="chat-message-submit" type="submit">Send</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<style>
+  #send-notification {
+    transition: opacity 0.5s ease-in-out;
+  }
+</style>
+
+<script>
+  const username = "{{ other_user.username }}";
+  const currentUser = "{{ request.user.username }}";
+
+  const chatSocket = new WebSocket(
+    (window.location.protocol === "https:" ? "wss://" : "ws://") +
+    window.location.host +
+    "/ws/chat/" + username + "/"
+  );
+
+  chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const chatBox = document.getElementById("chat-box");
+
+    const messageDiv = document.createElement("div");
+    messageDiv.classList.add("mb-2", data.sender === currentUser ? "text-end" : "text-start");
+
+    messageDiv.innerHTML = `
+      <div class="${data.sender === currentUser ? 'bg-success text-white' : 'bg-light border'} p-2 rounded">
+        ${data.message}
+        <div class="small ${data.sender === currentUser ? 'text-light' : 'text-muted'}">
+          ${formatTime(data.timestamp)}
+        </div>
+      </div>
+    `;
+
+    chatBox.appendChild(messageDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  };
+
+  document.getElementById("chat-form").onsubmit = function(e) {
+    e.preventDefault();
+    const input = document.getElementById("chat-message-input");
+    const message = input.value.trim();
+
+    if (message && chatSocket.readyState === WebSocket.OPEN) {
+      chatSocket.send(JSON.stringify({ message }));
+      input.value = "";
+
+      // Show "Message sent" notification
+      const notify = document.getElementById("send-notification");
+      notify.style.display = "block";
+
+      // Hide after 2 seconds
+      setTimeout(() => {
+        notify.style.display = "none";
+      }, 2000);
+    }
+  };
+
+  function formatTime(ts) {
+    try {
+      const d = new Date(ts);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return ts;
+    }
+  }
+</script>
+{% endblock %}

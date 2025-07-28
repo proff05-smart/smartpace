@@ -150,7 +150,7 @@ from django.shortcuts import render
 from .models import Post
 
 def post_list_view(request):
-    query = request.GET.get("q")
+    query = request.GET.get("q", "")
     post_list = Post.objects.all().order_by("-created")
 
     if query:
@@ -160,16 +160,21 @@ def post_list_view(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(
-        request,
-        "core/post_list.html",
-        {
-            "posts": page_obj,        
-            "page_obj": page_obj,     
-            "query": query,           
-        },
-    )
+    context = {
+        "posts": page_obj,
+        "page_obj": page_obj,
+        "query": query,
+        "total_results": post_list.count(),
+    }
 
+    return render(request, "core/post_list.html", context)
+        
+
+@login_required
+def post_likes_list(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    users = post.likes.all()
+    return render(request, 'post_likes_list.html', {'post': post, 'users': users})
 
 @login_required
 def like_post_view(request, pk):
@@ -189,7 +194,7 @@ def homepage_view(request):
     categories = quiz_categories[:4]
 
     all_posts = Post.objects.prefetch_related("comments").order_by("-created")
-    paginator = Paginator(all_posts, 6)
+    paginator = Paginator(all_posts, 25)
     page_number = request.GET.get("page")
     posts = paginator.get_page(page_number)
 
@@ -853,10 +858,6 @@ def reply_to_comment(request, post_id, parent_id):
     return redirect("home", pk=post.id)
 
 
-def notifications(request):
-    return render(request, "notifications.html")
-
-
 def is_root(self):
     return self.parent is None
 
@@ -871,6 +872,10 @@ def user_analytics(request):
 
 
 
+def notifications(request):
+    return render(request, "notifications.html")
+
+
 
 
 # =============================
@@ -882,20 +887,17 @@ def unread_notifications_json(request):
         user=request.user, is_read=False
     ).select_related("sender__profile", "post")
 
+    default_photo_url = "https://res.cloudinary.com/dwp0xtvyb/image/upload/v123456789/default_profile.png"
+    
     data = []
     for n in notifications:
-        # Prevent duplicate 'your post'
         message = f"{n.sender.username} {n.verb}"
         if n.post and "your post" not in n.verb:
             message += f" your post '{n.post.title}'"
 
-        # Safe handling of photo
-        default_photo_url = "https://res.cloudinary.com/dwp0xtvyb/image/upload/v123456789/default_profile.png"
+        # Safe photo handling
         try:
-            if n.sender.profile.photo:
-                photo_url = n.sender.profile.photo.url
-            else:
-                photo_url = default_photo_url
+            photo_url = n.sender.profile.photo.url if n.sender.profile.photo else default_photo_url
         except Exception:
             photo_url = default_photo_url
 
@@ -915,19 +917,16 @@ def unread_notifications_json(request):
 # =============================
 @login_required
 def unread_notifications(request):
-    """
-    Display and auto-mark all unread notifications as read.
-    """
     notifications = Notification.objects.filter(
         user=request.user, is_read=False
     ).select_related("sender__profile", "post")
 
-    # Mark them as read after displaying
     notifications.update(is_read=True)
 
     return render(
         request, "notifications/unread.html", {"notifications": notifications}
     )
+
 
 
 # =============================
@@ -937,10 +936,11 @@ def unread_notifications(request):
 def all_notifications(request):
     notifications = (
         Notification.objects.filter(user=request.user)
-        .select_related("sender__profile", "post")  
+        .select_related("sender__profile", "post")
         .order_by("-created_at")
     )
     return render(request, "notifications/all.html", {"notifications": notifications})
+
 
 # =============================
 # ☑️ MARK SINGLE NOTIFICATION AS READ
@@ -948,21 +948,14 @@ def all_notifications(request):
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
-
 @login_required
 def mark_notification_as_read(request, notification_id):
-    """
-    Mark a specific notification as read and redirect to the related post or a fallback page.
-    """
-    notification = get_object_or_404(
-        Notification, id=notification_id, user=request.user
-    )
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
 
     if not notification.is_read:
         notification.is_read = True
         notification.save()
 
-    # Redirect to related post or fallback
     redirect_url = (
         notification.post.get_absolute_url()
         if hasattr(notification, 'post') and notification.post
@@ -971,16 +964,15 @@ def mark_notification_as_read(request, notification_id):
     return redirect(redirect_url)
 
 
+
 # =============================
 # 🧹 MARK ALL AS READ (Button)
 # =============================
 @login_required
 def mark_all_notifications_as_read(request):
-    """
-    Mark all unread notifications as read.
-    """
-    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    Notification.objects.filter(user=request.user, is_read=True).update(is_read=True)
     return redirect("unread_notifications")
+
 
 
 def quiz_list_view(request):
@@ -1055,11 +1047,12 @@ def add_reply_ajax(request, post_pk, parent_id):
 
 
 
-
+from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Count
 from django.shortcuts import render
 from .models import QuizCategory, QuizResult
-@login_required
+
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
 def most_attempted_categories(request):
     category_stats = (
         QuizCategory.objects
@@ -1067,7 +1060,6 @@ def most_attempted_categories(request):
         .order_by('-attempts')
     )
     return render(request, 'analytics/most_attempted.html', {'category_stats': category_stats})
-
 
 
 from django.contrib.auth.decorators import user_passes_test

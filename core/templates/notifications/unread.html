@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
+{% load humanize %}
+
 <div class="container mt-4">
     <h4>🔔 Unread Notifications</h4>
     <a class="btn btn-sm btn-outline-primary mb-3" href="{% url 'mark_all_notifications_as_read' %}">
@@ -9,7 +11,7 @@
     {% if notifications %}
         {% for notification in notifications %}
             <div class="alert alert-info d-flex align-items-center">
-                <img src="{{ notification.sender.userprofile.photo.url }}"
+                    <img src="{{ notification.sender.profile.photo.url|default:'https://res.cloudinary.com/dwp0xtvyb/image/upload/v123456789/default_profile.png' }}"
                      class="rounded-circle me-3" width="40" height="40"
                      alt="{{ notification.sender.username }}">
                 <div>

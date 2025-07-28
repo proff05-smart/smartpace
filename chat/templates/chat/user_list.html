@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+
+
+<div class="container py-3">
+  <h4>💬 Chat Users</h4>
+
+  <!-- 🔍 Search -->
+<form method="get" action="{% url 'chat:user_search' %}" class="input-group mb-3">
+    <input type="text" name="q" class="form-control" placeholder="Search by username..." required>
+    <button type="submit" class="btn btn-outline-primary">Search</button>
+  </form>
+
+  <!-- 👥 User List -->
+  <ul class="list-group">
+    {% for chat_user in chat_users %}
+      <li class="list-group-item d-flex justify-content-between align-items-center {% if chat_user.unread_count %}bg-light fw-bold{% endif %}">
+        <span>{{ chat_user.username }}</span>
+        
+        {% if chat_user.unread_count %}
+          <span class="badge bg-danger rounded-pill">{{ chat_user.unread_count }}</span>
+        {% endif %}
+        <a href="{% url 'chat:chat_view' chat_user.username %}" class="btn btn-sm btn-success">Chat</a>
+      </li>
+    {% empty %}
+      <li class="list-group-item text-muted">No active chats found.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
