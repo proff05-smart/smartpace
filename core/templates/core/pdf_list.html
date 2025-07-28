@@ -1,25 +1,32 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<h2 class="my-4">📚 All PDFs</h2>
+<div class="container-fluid px-0">
+  <h2 class="my-4 ps-3">📚 All PDFs</h2>
 
-<a href="{% url 'pdf_upload' %}" class="btn btn-success mb-3">➕ Upload New PDF</a>
+  <div class="ps-3 mb-3">
+    <a href="{% url 'pdf_upload' %}" class="btn btn-success">➕ Upload New PDF</a>
+  </div>
 
-<div class="row">
-  {% for pdf in pdfs %}
-    <div class="col-md-6">
-      <div class="card mb-3 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title">{{ pdf.title }}</h5>
-          <p class="card-text">{{ pdf.description }}</p>
-          <p><strong>📂 Category:</strong> {{ pdf.category }}</p>
-          <p><strong>👤 Uploaded by:</strong> {{ pdf.uploaded_by.username }}</p>
-          <a href="{{ pdf.file.url }}" class="btn btn-primary" download>⬇ Download PDF</a>
-          <a href="{{ pdf.file.url }}" target="_blank" class="btn btn-outline-secondary">📖 View</a>
+  <div class="row g-3 px-3">
+    {% for pdf in pdfs %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">{{ pdf.title }}</h5>
+            <p class="card-text">{{ pdf.description }}</p>
+            <p><strong>📂 Category:</strong> {{ pdf.category }}</p>
+            <p><strong>👤 Uploaded by:</strong> {{ pdf.uploaded_by.username }}</p>
+          </div>
+          <div class="card-footer d-flex justify-content-between">
+            <a href="{{ pdf.file.url }}" class="btn btn-primary btn-sm" download>⬇ Download</a>
+            <a href="{{ pdf.file.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">📖 View</a>
+          </div>
         </div>
       </div>
-    </div>
-  {% empty %}
-    <p>No PDFs uploaded yet.</p>
-  {% endfor %}
+    {% empty %}
+      <p class="ps-3">No PDFs uploaded yet.</p>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}

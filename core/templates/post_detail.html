@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% load static humanize widget_tweaks youtube_embed youtube_tags %}
+{% load youtube_tags %}
+
+
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid px-0 mt-0">
+
 
   <!-- 🔹 Post Title -->
   <h2 class="fw-bold">{{ post.title }}</h2>
@@ -35,22 +39,16 @@
 
 <!-- 🔹 Media Display -->
 {% if post.video %}
-  <!-- Uploaded video -->
   <video width="100%" controls class="mb-3 rounded">
     <source src="{{ post.video.url }}" type="video/mp4">
-    Your browser does not support the video tag.
   </video>
-
-{% elif post.youtube_url and "youtube.com" in post.youtube_url or "youtu.be" in post.youtube_url %}
-  <!-- YouTube embedded video -->
+{% elif post.youtube_url|is_youtube_link %}
   <div class="ratio ratio-16x9 mb-3">
-    <iframe
-      src="https://www.youtube.com/embed/{{ post.youtube_url|cut:'https://youtu.be/'|cut:'https://www.youtube.com/watch?v=' }}"
-      title="YouTube video player"
-      allowfullscreen class="border-0">
-    </iframe>
+    <iframe src="{{ post.youtube_url|youtube_embed }}"
+            frameborder="0" allowfullscreen class="w-100 rounded border-0"></iframe>
   </div>
 {% endif %}
+
 
 
   <!-- 🔹 Post Image -->
@@ -73,11 +71,12 @@
 
 
   <a href="{% url 'profile_dashboard' %}">
-  <img src="{{ request.user.profile.photo.url }}"
-       alt="Profile Photo"
-       class="rounded-circle"
-       width="40" height="40"
-       style="object-fit: cover;">
+  <img src="{% if request.user.profile.photo %}{{ request.user.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
+     alt="Profile Photo"
+     class="rounded-circle"
+     width="40" height="40"
+     style="object-fit: cover;">
+
 </a>
 
  
@@ -102,6 +101,10 @@
     ❤️ {{ post.likes.count }}
   </button>
 </form>
+
+<a href="{% url 'post_likes_list' post.pk %}" class="btn btn-link btn-sm">
+  See who liked
+</a>
 
 
 <!-- 🔹 Comment Form -->
@@ -128,29 +131,33 @@
 
 
   <!-- 📚 Related Posts -->
-  {% if related_posts %}
-    <section aria-labelledby="related-posts-heading" class="mt-5">
-      <h5 id="related-posts-heading" class="mb-4">📚 Related Posts</h5>
-      <div class="row">
-        {% for related in related_posts %}
-          <div class="col-md-4 mb-3">
-            <div class="card h-100 shadow-sm">
-              {% if related.image %}
-                <img src="{{ related.image.url }}" alt="{{ related.title }}" class="card-img-top img-fluid"
-                     onerror="this.onerror=null;this.src='{% static 'images/default.jpg' %}';">
-              {% else %}
-                <img src="{% static 'images/default.jpg' %}" alt="Default Post Image" class="card-img-top img-fluid">
-              {% endif %}
-              <div class="card-body">
-                <h6 class="card-title text-truncate" title="{{ related.title }}">{{ related.title }}</h6>
-                <a href="{% url 'post_detail' related.pk %}" class="btn btn-sm btn-outline-primary">Read More</a>
-              </div>
+ {% if related_posts %}
+  <section aria-labelledby="related-posts-heading" class="container-fluid px-0 mt-5">
+    <h5 id="related-posts-heading" class="mb-4 ps-3">📚 Related Posts</h5>
+    <div class="row g-2 mx-0">
+      {% for related in related_posts %}
+        <div class="col-6 col-md-4 mb-2">
+          <div class="card h-100 shadow-sm rounded-3 overflow-hidden">
+            {% if related.image %}
+              <img src="{{ related.image.url }}" alt="{{ related.title }}"
+                   class="card-img-top img-fluid"
+                   style="height: 180px; object-fit: cover;"
+                   onerror="this.onerror=null;this.src='{% static 'images/default.jpg' %}';">
+            {% else %}
+              <img src="{% static 'images/default.jpg' %}" alt="Default Post Image"
+                   class="card-img-top img-fluid" style="height: 180px; object-fit: cover;">
+            {% endif %}
+            <div class="card-body">
+              <h6 class="card-title text-truncate" title="{{ related.title }}">{{ related.title }}</h6>
+              <a href="{% url 'post_detail' related.pk %}" class="btn btn-sm btn-outline-primary">Read More</a>
             </div>
           </div>
-        {% endfor %}
-      </div>
-    </section>
-  {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+
 
 
 

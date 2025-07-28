@@ -3,6 +3,17 @@ from django.contrib.auth.views import LoginView, LogoutView
 from . import views
 from .views import most_attempted_categories
 from .views import learner_analytics
+from core.views import unread_notifications_json
+from .views import all_notifications
+
+from core.views import (
+    unread_notifications_json,
+    unread_notifications,
+    mark_all_notifications_as_read,
+    mark_notification_as_read,
+)
+
+
 
 urlpatterns = [
     # Home
@@ -23,6 +34,8 @@ urlpatterns = [
     path('profile/<str:username>/', views.user_profile, name='user_profile'),
     path('profile/<int:user_id>/', views.user_profile, name='user_profile_by_id'),
     path('edit-profile/', views.edit_profile, name='profile_edit'),
+    path('profile/', views.profile_view, name='profile_view'),
+
 
 
 
@@ -62,21 +75,27 @@ urlpatterns = [
     path('analytics/learners/', learner_analytics, name='learner_analytics'),
 
 
-    # Notifications
-    path('notifications/', views.notifications, name='notifications'),
-    path('notifications/unread/', views.unread_notifications, name='unread_notifications'),
-    path('notifications/read/<int:notification_id>/', views.mark_notification_as_read, name='mark_notification_as_read'),
-    path('notifications/read-all/', views.mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
-    path('notifications/json/', views.unread_notifications_json, name='unread_notifications_json'),
-    path('notifications/all/', views.all_notifications, name='all_notifications'),
-    path('notifications/mark/<int:notification_id>/', views.mark_notification_as_read, name='mark_notification_as_read_alt'),
-    path('notifications/mark_all/', views.mark_all_notifications_as_read, name='mark_all_notifications_as_read_alt'),
-    path('notifications/json/', views.unread_notifications_json, name='unread_notifications_json'),
-    #path('notifications/mark-read/<int:pk>/', views.mark_notification_read, name='mark_notification_read'),
-    path('notifications/mark-read/<int:pk>/', views.mark_notification_as_read, name='mark_notification_read'),
+        #notifications
 
+    path('notifications/all/', views.all_notifications, name='all_notifications'),
+    path('notifications/mark-all-read/', mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
+    path('notifications/', unread_notifications, name='notification_list'),  
+    path('notifications/all/', all_notifications, name='all_notifications'),  
+    path('notifications/unread/json/', unread_notifications_json, name='unread_notifications_json'),  
+    path('notifications/unread/', unread_notifications, name='unread_notifications'),  
+    path('notifications/mark/<int:notification_id>/', mark_notification_as_read, name='mark_notification_as_read'),
+    path('notifications/mark_all/', mark_all_notifications_as_read, name='mark_all_notifications'),
+    path('notifications/json/', unread_notifications_json, name='notifications-json'),
+    path("notifications/json/", views.unread_notifications_json, name="unread_notifications_json"),
+    path("notifications/", views.notifications, name="notifications"),
+    path("notifications/unread/", views.unread_notifications, name="unread_notifications"),
+    path("notifications/all/", views.all_notifications, name="all_notifications"),
+    path("notifications/read/<int:notification_id>/", views.mark_notification_as_read, name="mark_notification_as_read"),
+    path("notifications/mark-all-read/", views.mark_all_notifications_as_read, name="mark_all_notifications_as_read"),
 
     # Utilities
     path('search/', views.search_view, name='search'),
     path('support/', views.support_view, name='support'),
+    path('post/<int:pk>/likes/', views.post_likes_list, name='post_likes_list'),
+
 ]

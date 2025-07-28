@@ -5,6 +5,7 @@ import dj_database_url
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+import urllib.parse as urlparse
 
 # Load environment variables from .env at the very start
 load_dotenv()
@@ -35,9 +36,28 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'core',
     'embed_video',
-   'django_ckeditor_5',
+    'django_ckeditor_5',
+    'channels',
+    'chat',
 
 ]
+
+
+ASGI_APPLICATION = 'smartpace.asgi.application'
+
+# Redis backend for channels
+
+
+redis_url = os.getenv("REDIS_URL", "redis://127.0.0.1:6379")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [redis_url],
+        },
+    },
+}
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
