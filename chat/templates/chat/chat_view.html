@@ -45,8 +45,11 @@
 
 
 const chatSocket = new WebSocket(
-  "wss://smartpace-web.onrender.com/ws/chat/" + username + "/"
+  (window.location.protocol === "https:" ? "wss://" : "ws://") +
+  window.location.host +
+  "/ws/chat/" + username + "/"
 );
+
 
 
 

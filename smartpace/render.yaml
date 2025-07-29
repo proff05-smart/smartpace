@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: smartpace-web
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: daphne -b 0.0.0.0 -p 8000 smartpace.asgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: smartpace.settings
+      - key: REDIS_URL
+        value: redis://:<password>@<host>:<port>  
+    plan: free
