@@ -52,9 +52,12 @@
 <script>
   const username = "{{ other_user.username|escapejs }}";
   const currentUser = "{{ request.user.username|escapejs }}";
-  const chatSocket = new WebSocket(
-    "wss://smartpace-web.onrender.com/ws/chat/" + username + "/"
-  );
+ const chatSocket = new WebSocket(
+  (window.location.protocol === "https:" ? "wss://" : "ws://") +
+  window.location.host +
+  "/ws/chat/" + username + "/"
+);
+
 
 
   chatSocket.onmessage = function(e) {
