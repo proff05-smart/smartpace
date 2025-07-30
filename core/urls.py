@@ -5,6 +5,7 @@ from .views import most_attempted_categories
 from .views import learner_analytics
 from core.views import unread_notifications_json
 from .views import all_notifications
+from .views import select_group_view
 
 from core.views import (
     unread_notifications_json,
@@ -100,14 +101,24 @@ urlpatterns = [
 
 
     #homework
-
+    path('', views.teacher_dashboard, name='home'),  
     path('homework/', views.homework_list, name='homework_list'),
     path('homework/<int:homework_id>/submit/', views.submit_homework, name='submit_homework'),
     path('homework/my_submissions/', views.homework_submissions, name='homework_submissions'),
     path('homework/teacher/', views.teacher_dashboard, name='teacher_dashboard'),
-    #path('homework/teacher/create/', views.create_homework, name='create_homework'),
     path('teacher/dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
     path('my-graded-homework/', views.my_graded_homework, name='my_graded_homework'),
+    path('select-group/', views.select_group_view, name='select_group'),
+    path('homework/teacher/create/', views.create_homework, name='create_homework'),
+    #path('homework/<int:homework_id>/submissions/', views.view_submissions, name='view_submissions'),
+    path('homework/<int:homework_id>/submissions/', views.view_submissions, name='view_submissions'),
+    path('submission/<int:submission_id>/grade/', views.grade_submission, name='grade_submission'),
+    path('homework/<int:homework_id>/submit/', views.submit_homework, name='submit_homework'),
+    path('homework/<int:pk>/edit/', views.edit_homework, name='edit_homework'),
+    path('homework/<int:pk>/view/', views.view_homework, name='view_homework'),
+
+
+
 
 ]
 

@@ -1196,3 +1196,76 @@ from .models import HomeworkSubmission
 def my_graded_homework(request):
     submissions = HomeworkSubmission.objects.filter(student=request.user, is_graded=True)
     return render(request, 'homework/my_graded_homework.html', {'submissions': submissions})
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .forms import SelectGroupForm
+
+@login_required
+def select_group_view(request):
+    user = request.user
+
+    if request.method == 'POST':
+        form = SelectGroupForm(request.POST)
+        if form.is_valid():
+            selected_group = form.cleaned_data['group']
+            user.groups.clear()
+            user.groups.add(selected_group)
+            messages.success(request, f"You have been assigned to {selected_group.name}.")
+            return redirect('home')  
+    else:
+        form = SelectGroupForm()
+
+    return render(request, 'select_group.html', {'form': form})
+
+
+
+
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render, get_object_or_404, redirect
+from .forms import TeacherMarkingForm
+from .models import HomeworkSubmission
+
+@staff_member_required
+def grade_submission(request, submission_id):
+    submission = get_object_or_404(HomeworkSubmission, id=submission_id)
+    if request.method == 'POST':
+        form = TeacherMarkingForm(request.POST, instance=submission)
+        if form.is_valid():
+            form.save()
+            return redirect('view_submissions', homework_id=submission.homework.id)
+    else:
+        form = TeacherMarkingForm(instance=submission)
+    return render(request, 'homework/grade_submission.html', {'form': form, 'submission': submission})
+
+from django.contrib.admin.views.decorators import staff_member_required
+
+@staff_member_required
+def view_submissions(request, homework_id):
+    homework = get_object_or_404(Homework, id=homework_id)
+    submissions = homework.submissions.select_related('student').all()
+    return render(request, 'homework/view_submissions.html', {
+        'homework': homework,
+        'submissions': submissions,
+    })
+
+# views.py
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Homework
+from .forms import HomeworkForm
+
+def edit_homework(request, pk):
+    hw = get_object_or_404(Homework, pk=pk)
+    if request.method == 'POST':
+        form = HomeworkForm(request.POST, instance=hw)
+        if form.is_valid():
+            form.save()
+            return redirect('teacher_dashboard')
+    else:
+        form = HomeworkForm(instance=hw)
+    return render(request, 'homework/edit_homework.html', {'form': form})
+
+def view_homework(request, pk):
+    hw = get_object_or_404(Homework, pk=pk)
+    return render(request, 'homework/view_homework.html', {'homework': hw})

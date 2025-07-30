@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">✏️ Edit Homework</h2>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
+      {{ form.title }}
+      {% if form.title.errors %}
+        <div class="text-danger small">{{ form.title.errors|join:", " }}</div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label for="{{ form.instructions.id_for_label }}" class="form-label">Instructions</label>
+      {{ form.instructions }}
+      {% if form.instructions.errors %}
+        <div class="text-danger small">{{ form.instructions.errors|join:", " }}</div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label for="{{ form.due_date.id_for_label }}" class="form-label">Due Date</label>
+      {{ form.due_date }}
+      {% if form.due_date.errors %}
+        <div class="text-danger small">{{ form.due_date.errors|join:", " }}</div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label for="{{ form.assigned_to.id_for_label }}" class="form-label">Assigned To</label>
+      {{ form.assigned_to }}
+      {% if form.assigned_to.errors %}
+        <div class="text-danger small">{{ form.assigned_to.errors|join:", " }}</div>
+      {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a href="{% url 'teacher_dashboard' %}" class="btn btn-secondary ms-2">Cancel</a>
+  </form>
+
+ 
+  {{ form.media }}
+</div>
+{% endblock %}
