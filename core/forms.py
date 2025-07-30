@@ -3,6 +3,10 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.forms import modelformset_factory
 from .models import Profile, Post, PostMedia, Comment, PDFDocument
+from .models import HomeworkSubmission, Homework
+from django_ckeditor_5.widgets import CKEditor5Widget
+from django_ckeditor_5.widgets import CKEditor5Widget
+
 
 # --- User Registration Form ---
 class RegisterForm(UserCreationForm):
@@ -116,3 +120,47 @@ class PDFUploadForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
         }
+
+
+
+
+class HomeworkSubmissionForm(forms.ModelForm):
+    class Meta:
+        model = HomeworkSubmission
+        fields = ['grade', 'answer_text', 'submitted_file']  
+        widgets = {
+            'answer_text': CKEditor5Widget(config_name='default'),
+            'grade': forms.Select(attrs={'class': 'form-select'}), 
+        }
+class HomeworkForm(forms.ModelForm):
+    class Meta:
+        model = Homework
+        fields = ['title', 'instructions', 'subject', 'due_date', 'attachment', 'assigned_to']
+        widgets = {
+            'instructions': CKEditor5Widget(config_name='default'),
+            'assigned_to': forms.SelectMultiple(attrs={'class': 'form-select'})
+        }
+
+
+
+from .models import HomeworkSubmissionImage
+from django.forms import modelformset_factory
+
+class HomeworkSubmissionImageForm(forms.ModelForm):
+    class Meta:
+        model = HomeworkSubmissionImage
+        fields = ['image']
+        widgets = {
+            'image': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+                'multiple': False 
+            })
+        }
+
+# Create a formset to allow multiple image uploads
+HomeworkSubmissionImageFormSet = modelformset_factory(
+    HomeworkSubmissionImage,
+    form=HomeworkSubmissionImageForm,
+    extra=5,  
+    can_delete=True
+)

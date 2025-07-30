@@ -98,4 +98,16 @@ urlpatterns = [
     path('support/', views.support_view, name='support'),
     path('post/<int:pk>/likes/', views.post_likes_list, name='post_likes_list'),
 
+
+    #homework
+
+    path('homework/', views.homework_list, name='homework_list'),
+    path('homework/<int:homework_id>/submit/', views.submit_homework, name='submit_homework'),
+    path('homework/my_submissions/', views.homework_submissions, name='homework_submissions'),
+    path('homework/teacher/', views.teacher_dashboard, name='teacher_dashboard'),
+    #path('homework/teacher/create/', views.create_homework, name='create_homework'),
+    path('teacher/dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
+    path('my-graded-homework/', views.my_graded_homework, name='my_graded_homework'),
+
 ]
+

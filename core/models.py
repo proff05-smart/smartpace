@@ -8,6 +8,13 @@ from django.utils import timezone
 from django.urls import reverse
 from cloudinary.models import CloudinaryField
 from django_ckeditor_5.fields import CKEditor5Field
+from django.contrib.auth.models import Group
+from django.db import models
+from django.contrib.auth.models import Group
+#from ckeditor_uploader.fields import CKEditor5Field
+from cloudinary.models import CloudinaryField
+
+
 
 
 class Profile(models.Model):
@@ -312,3 +319,99 @@ from cloudinary.models import CloudinaryField
 
 photo = CloudinaryField('image', blank=True, null=True)
 avatar = CloudinaryField('image', default='https://res.cloudinary.com/your_cloud/image/upload/v123456789/default.png', blank=True)
+
+
+
+
+# Grade options — customize as needed
+GRADE_CHOICES = [
+    ('Grade 1', 'Grade 1'),
+    ('Grade 2', 'Grade 2'),
+    ('Grade 3', 'Grade 3'),
+    ('Grade 4', 'Grade 4'),
+    ('Grade 5', 'Grade 5'),
+    ('Grade 6', 'Grade 6'),
+    ('Grade 7', 'Grade 7'),
+    ('Grade 8', 'Grade 8'),
+    ('Grade 9', 'Grade 9'),
+    ('Grade 10', 'Grade 10'),
+    ('Grade 11', 'Grade 11'),
+    ('Grade 12', 'Grade 12'),
+]
+
+class Homework(models.Model):
+    title = models.CharField(max_length=255)
+    instructions = CKEditor5Field('Homework instructions')
+    subject = models.CharField(max_length=100)
+    image = CloudinaryField('image', blank=True, null=True)
+    grade = models.CharField(max_length=20, choices=GRADE_CHOICES, default="Grade 8")  
+    due_date = models.DateField()
+    attachment = CloudinaryField('file', blank=True, null=True)  
+    created_at = models.DateTimeField(auto_now_add=True)
+    assigned_to = models.ManyToManyField(
+        Group,
+        help_text="Select class(es) this homework is assigned to"
+    )
+
+    def __str__(self):
+        return self.title
+
+
+class HomeworkImage(models.Model):
+    homework = models.ForeignKey(
+        Homework,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+    image = CloudinaryField('image')  
+
+    def __str__(self):
+        return f"Image for {self.homework.title}"
+
+        
+from django.contrib.auth import get_user_model
+from cloudinary.models import CloudinaryField
+
+User = get_user_model()
+
+GRADE_CHOICES = [
+    ('Grade 1', 'Grade 1'),
+    ('Grade 2', 'Grade 2'),
+    ('Grade 3', 'Grade 3'),
+    ('Grade 4', 'Grade 4'),
+    ('Grade 5', 'Grade 5'),
+    ('Grade 6', 'Grade 6'),
+    ('Grade 7', 'Grade 7'),
+    ('Grade 8', 'Grade 8'),
+    ('Grade 9', 'Grade 9'),
+    ('Grade 10', 'Grade 10'),
+    ('Grade 11', 'Grade 11'),
+    ('Grade 12', 'Grade 12'),
+]
+
+class HomeworkSubmission(models.Model):
+    homework = models.ForeignKey('Homework', on_delete=models.CASCADE, related_name='submissions')
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    grade = models.CharField(max_length=20, choices=GRADE_CHOICES, default="Grade 8", blank=True, null=True)
+    submitted_file = CloudinaryField('file', blank=True, null=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    answer_text = CKEditor5Field('Your Answer', blank=True, null=True)
+    feedback = models.TextField(blank=True, null=True)
+    is_graded = models.BooleanField(default=False)
+    mark_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True,
+        help_text="Enter the mark as a percentage (e.g., 87.50)"
+    )
+
+    def __str__(self):
+        student_name = self.student.username if self.student else "Unknown Student"
+        homework_title = self.homework.title if self.homework else "Unknown Homework"
+        return f"{student_name}'s submission for {homework_title}"
+
+
+class HomeworkSubmissionImage(models.Model):
+    submission = models.ForeignKey(HomeworkSubmission, on_delete=models.CASCADE, related_name='images')
+    image = CloudinaryField('image')
+
+    def __str__(self):
+        return f"Image for {self.submission}"

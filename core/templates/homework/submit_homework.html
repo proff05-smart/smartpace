@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">{{ homework.title }}</h2>
+
+  <div class="mb-3">
+    <p><strong>Instructions:</strong> {{ homework.instructions|safe }}</p>
+    <p><strong>Subject:</strong> {{ homework.subject }}</p>
+    <p><strong>Due Date:</strong> {{ homework.due_date }}</p>
+  </div>
+
+  {% if is_editing %}
+    <div class="alert alert-info">
+      You already submitted this homework. You can update your submission below.
+    </div>
+
+    {% if form.instance.submitted_file %}
+      <p><strong>Previously Submitted File:</strong>
+        <a href="{{ form.instance.submitted_file.url }}" target="_blank">View File</a>
+      </p>
+    {% endif %}
+  {% endif %}
+
+  {% if form.errors or formset.errors %}
+    <div class="alert alert-danger">
+      <strong>Please correct the errors below.</strong>
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.media }}
+
+    <div class="mb-3">
+      {{ form.grade.label_tag }}
+      {{ form.grade }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.answer_text.label_tag }}
+      {{ form.answer_text }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.submitted_file.label_tag }}
+      {{ form.submitted_file }}
+    </div>
+
+    <hr>
+    <h5 class="mb-3">Upload Extra Images (Optional)</h5>
+    {{ formset.management_form }}
+    <div class="row">
+      {% for image_form in formset %}
+        <div class="col-12 col-sm-6 col-md-4 mb-3">
+          {{ image_form.image.label_tag }}
+          {{ image_form.image }}
+        </div>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-success mt-3 w-100 w-md-auto">
+      {% if is_editing %}Update Submission{% else %}Submit Homework{% endif %}
+    </button>
+  </form>
+</div>
+{% endblock %}

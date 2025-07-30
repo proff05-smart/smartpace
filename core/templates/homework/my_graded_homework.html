@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>My Graded Homework</h2>
+  {% if submissions %}
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Homework</th>
+            <th>Grade</th>
+            <th>Mark (%)</th>  
+            <th>Feedback</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sub in submissions %}
+          <tr>
+            <td>{{ sub.homework.title }}</td>
+            <td>{{ sub.grade }}</td>
+            <td>
+              {% if sub.mark_percentage %}
+                {{ sub.mark_percentage }}%
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>{{ sub.feedback|default:"—" }}</td>
+            <td>{{ sub.submitted_at|date:"M d, Y H:i" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>You have no graded homework yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
