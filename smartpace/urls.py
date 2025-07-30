@@ -25,6 +25,7 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls')),
     path('chat/', include('chat.urls', namespace='chat')),
+    
 
 
    

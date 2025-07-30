@@ -6,15 +6,36 @@ from .models import Profile, Post, PostMedia, Comment, PDFDocument
 from .models import HomeworkSubmission, Homework
 from django_ckeditor_5.widgets import CKEditor5Widget
 from django_ckeditor_5.widgets import CKEditor5Widget
-
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User, Group
 
 # --- User Registration Form ---
+
+
 class RegisterForm(UserCreationForm):
     email = forms.EmailField(required=True)
+    group = forms.ModelChoiceField(
+        queryset=Group.objects.all(),
+        required=True,
+        label="Class Stream",
+        help_text="Select your class stream",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password1', 'password2']
+        fields = ['username', 'email', 'password1', 'password2', 'group']
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data['email']
+        if commit:
+            user.save()
+            group = self.cleaned_data['group']
+            user.groups.add(group)
+        return user
+
 
 # --- User Login Form ---
 class UserLoginForm(forms.Form):
@@ -132,6 +153,7 @@ class HomeworkSubmissionForm(forms.ModelForm):
             'answer_text': CKEditor5Widget(config_name='default'),
             'grade': forms.Select(attrs={'class': 'form-select'}), 
         }
+
 class HomeworkForm(forms.ModelForm):
     class Meta:
         model = Homework
@@ -164,3 +186,39 @@ HomeworkSubmissionImageFormSet = modelformset_factory(
     extra=5,  
     can_delete=True
 )
+
+
+from django import forms
+from django.contrib.auth.models import Group
+
+class SelectGroupForm(forms.Form):
+    group = forms.ModelChoiceField(
+        queryset=Group.objects.all(),
+        required=True,
+        label="Select Your Class Stream",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+class TeacherMarkingForm(forms.ModelForm):
+    class Meta:
+        model = HomeworkSubmission
+        fields = ['mark_percentage', 'feedback', 'is_graded']
+        widgets = {
+            'feedback': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Enter specific feedback for the learner...'
+            }),
+            'mark_percentage': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': 'e.g. 88.50'
+            }),
+        }
+
+    def clean_mark_percentage(self):
+        mark = self.cleaned_data.get('mark_percentage')
+        if mark is not None and (mark < 0 or mark > 100):
+            raise forms.ValidationError("Mark must be between 0 and 100.")
+        return mark
+

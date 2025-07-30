@@ -1,9 +1,38 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block content %}
-<h2>Create Homework</h2>
-<form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit" class="btn btn-success">Create</button>
-</form>
+<div class="container mt-4">
+  <h2 class="mb-4 text-center">📘 Create Homework</h2>
+
+  {{ form.media }}
+
+  <form method="post" enctype="multipart/form-data" class="card p-4 shadow-sm">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      {{ form.title.label_tag }}  
+      {{ form.title }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.description.label_tag }}  
+      {{ form.description }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.due_date.label_tag }}  
+      {{ form.due_date }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.images.label_tag }}  
+      {{ form.images }}
+    </div>
+
+    <div class="mt-4 text-center text-md-end">
+      <button type="submit" class="btn btn-success w-100 w-md-auto">✅ Create</button>
+    </div>
+  </form>
+</div>
 {% endblock %}

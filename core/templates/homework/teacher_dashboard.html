@@ -1,21 +1,43 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <div class="container mt-4">
-  <h2 class="mb-4">Teacher Dashboard</h2>
-  <a href="{% url 'create_homework' %}" class="btn btn-primary mb-3">+ Create Homework</a>
+  <h2 class="mb-4 text-center">👩‍🏫 Teacher Dashboard</h2>
+
+  <div class="d-flex justify-content-end mb-3">
+    <a href="{% url 'create_homework' %}" class="btn btn-success">
+      ➕ Create Homework
+    </a>
+  </div>
 
   {% if homeworks %}
-    <div class="list-group">
+    <div class="row">
       {% for hw in homeworks %}
-        <div class="list-group-item mb-2">
-          <h5 class="mb-1">{{ hw.title }}</h5>
-          <p class="mb-1"><strong>Due:</strong> {{ hw.due_date }}</p>
-          <p class="mb-0"><strong>Assigned to:</strong> {{ hw.assigned_to.all|join:", " }}</p>
+        <div class="col-12 col-md-6 col-lg-4 mb-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title">{{ hw.title }}</h5>
+              <p class="card-text"><strong>Due:</strong> {{ hw.due_date }}</p>
+              <p class="card-text">
+                <strong>Assigned to:</strong><br>
+                <small class="text-muted">
+                  {{ hw.assigned_to.all|join:", " }}
+                </small>
+              </p>
+
+              {% if hw.id %}
+                <!-- <a href="{% url 'edit_homework' hw.id %}" class="btn btn-sm btn-primary mt-2">✏️ Edit</a> -->
+                <a href="{% url 'view_homework' hw.id %}" class="btn btn-sm btn-secondary mt-2">📄 View</a>
+              {% endif %}
+            </div>
+          </div>
         </div>
       {% endfor %}
     </div>
   {% else %}
-    <div class="alert alert-warning">No homework available.</div>
+    <div class="alert alert-warning text-center">
+      No homework available.
+    </div>
   {% endif %}
 </div>
 {% endblock %}
