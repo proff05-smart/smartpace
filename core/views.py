@@ -23,7 +23,17 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from .models import Post
-
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Homework, HomeworkSubmission
+from .forms import HomeworkSubmissionForm
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Homework, HomeworkSubmission
+from .forms import HomeworkSubmissionForm, HomeworkForm
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.contrib.auth.models import Group
 
 
 # Models
@@ -1082,3 +1092,107 @@ def learner_analytics(request):
         .order_by('-total_attempts')
     )
     return render(request, 'analytics/learner_analytics.html', {'learners': learners})
+
+
+
+
+@login_required
+def homework_list(request):
+    if request.user.is_staff:
+        homeworks = Homework.objects.all().order_by('-created_at')
+    else:
+        user_groups = request.user.groups.all()
+        homeworks = Homework.objects.filter(assigned_to__in=user_groups).distinct().order_by('-created_at')
+    return render(request, 'homework/homework_list.html', {'homeworks': homeworks})
+    
+from django.forms import modelformset_factory
+from .models import HomeworkSubmissionImage
+from .forms import HomeworkSubmissionForm, HomeworkSubmissionImageForm
+
+@login_required
+def submit_homework(request, homework_id):
+    homework = get_object_or_404(Homework, id=homework_id)
+    try:
+        submission = HomeworkSubmission.objects.get(homework=homework, student=request.user)
+        is_editing = True
+    except HomeworkSubmission.DoesNotExist:
+        submission = None
+        is_editing = False
+
+    ImageFormSet = modelformset_factory(HomeworkSubmissionImage, form=HomeworkSubmissionImageForm, extra=3, can_delete=False)
+
+    if request.method == 'POST':
+        form = HomeworkSubmissionForm(request.POST, request.FILES, instance=submission)
+        formset = ImageFormSet(request.POST, request.FILES, queryset=HomeworkSubmissionImage.objects.none())
+
+        if form.is_valid() and formset.is_valid():
+            sub = form.save(commit=False)
+            sub.homework = homework
+            sub.student = request.user
+            sub.save()
+
+            # Save the uploaded images
+            for image_form in formset.cleaned_data:
+                if image_form and image_form.get('image'):
+                    HomeworkSubmissionImage.objects.create(
+                        submission=sub,
+                        image=image_form['image']
+                    )
+
+            if is_editing:
+                messages.success(request, "Submission updated successfully.")
+            else:
+                messages.success(request, "Homework submitted successfully.")
+            return redirect('homework_list')
+    else:
+        form = HomeworkSubmissionForm(instance=submission)
+        formset = ImageFormSet(queryset=HomeworkSubmissionImage.objects.none())
+
+    return render(request, 'homework/submit_homework.html', {
+        'form': form,
+        'formset': formset,
+        'homework': homework,
+        'is_editing': is_editing
+    })
+
+
+
+@login_required
+def homework_submissions(request):
+    submissions = HomeworkSubmission.objects.filter(student=request.user).order_by('-submitted_at')
+    return render(request, 'homework/homework_submissions.html', {'submissions': submissions})
+
+
+
+@login_required
+def homework_submissions(request):
+    submissions = HomeworkSubmission.objects.filter(student=request.user).order_by('-submitted_at')
+    return render(request, 'homework/homework_submissions.html', {'submissions': submissions})
+
+@user_passes_test(lambda u: u.is_staff)
+def teacher_dashboard(request):
+    homeworks = Homework.objects.all().order_by('-created_at')
+    return render(request, 'homework/teacher_dashboard.html', {'homeworks': homeworks})
+
+@user_passes_test(lambda u: u.is_staff)
+def create_homework(request):
+    if request.method == 'POST':
+        form = HomeworkForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Homework created successfully.")
+            return redirect('teacher_dashboard')
+    else:
+        form = HomeworkForm()
+    return render(request, 'homework/create_homework.html', {'form': form})
+
+
+# views.py
+
+from django.contrib.auth.decorators import login_required
+from .models import HomeworkSubmission
+
+@login_required
+def my_graded_homework(request):
+    submissions = HomeworkSubmission.objects.filter(student=request.user, is_graded=True)
+    return render(request, 'homework/my_graded_homework.html', {'submissions': submissions})

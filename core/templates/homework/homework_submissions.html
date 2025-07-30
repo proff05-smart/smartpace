@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">My Homework Submissions</h2>
+<div class="list-group">
+  {% for sub in submissions %}
+    <div class="list-group-item mb-2">
+      <h5 class="mb-1">{{ sub.homework.title }}</h5>
+      <p class="mb-1">Submitted on: {{ sub.submitted_at|date:"SHORT_DATE_FORMAT" }}</p>
+      {% if sub.graded %}
+        <p class="mb-1"><strong>Grade:</strong> {{ sub.grade }}</p>
+        <p class="mb-0"><strong>Feedback:</strong> {{ sub.feedback }}</p>
+      {% else %}
+        <p class="text-muted mb-0"><em>Not graded yet</em></p>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="list-group-item text-muted">You haven't submitted any homework yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}
