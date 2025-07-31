@@ -157,11 +157,13 @@ class HomeworkSubmissionForm(forms.ModelForm):
 class HomeworkForm(forms.ModelForm):
     class Meta:
         model = Homework
-        fields = ['title', 'instructions', 'subject', 'due_date', 'attachment', 'assigned_to']
+        fields = ['title', 'instructions', 'subject', 'due_date', 'attachment', 'assigned_to', 'image']
         widgets = {
             'instructions': CKEditor5Widget(config_name='default'),
-            'assigned_to': forms.SelectMultiple(attrs={'class': 'form-select'})
+            'due_date': forms.DateInput(attrs={'class': 'form-control', 'id': 'datepicker'}),
+            'assigned_to': forms.SelectMultiple(attrs={'class': 'form-select'}),
         }
+
 
 
 
