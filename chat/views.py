@@ -79,3 +79,27 @@ def user_list(request):
     )
 
     return render(request, 'chat/user_list.html', {'chat_users': chat_users})
+
+
+from django.http import JsonResponse
+
+@login_required
+def fetch_messages(request, username):
+    other_user = get_object_or_404(User, username=username)
+
+    messages = PrivateMessage.objects.filter(
+        sender__in=[request.user, other_user],
+        receiver__in=[request.user, other_user]
+    ).order_by('timestamp')
+
+    data = []
+    for msg in messages:
+        data.append({
+            'sender': msg.sender.username,
+            'receiver': msg.receiver.username,
+            'content': msg.content,
+            'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_self': msg.sender == request.user
+        })
+
+    return JsonResponse(data, safe=False)
