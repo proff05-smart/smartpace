@@ -10,10 +10,53 @@
               <strong>Submitted At:</strong> {{ submission.submitted_at }}
             </p>
 
-            <div class="mb-2" style="overflow-x: auto;">
-              <strong>Answer:</strong><br>
-              {{ submission.answer_text|safe }}
-            </div>
+
+<div class="container mt-4 mb-4">
+  <div class="bg-light p-4 rounded shadow-sm">
+    <h2 class="mb-2">{{ homework.title }}</h2>
+    <p><strong>Subject:</strong> {{ homework.subject }}</p>
+    <p><strong>Grade:</strong> {{ homework.grade }}</p>
+    <p><strong>Due Date:</strong> {{ homework.due_date }}</p>
+
+    <div class="mt-3">
+      <strong>Instructions:</strong>
+      <div class="border rounded p-3 mt-2 bg-white">
+        {{ homework.instructions|safe }}
+      </div>
+    </div>
+
+    {% if homework.attachment %}
+      <p class="mt-3">
+        <strong>Attachment:</strong> <a href="{{ homework.attachment.url }}" target="_blank">📎 Download</a>
+      </p>
+    {% endif %}
+
+    {% if homework.image %}
+      <div class="mt-3">
+        <strong>Image:</strong><br>
+        <img src="{{ homework.image.url }}" alt="Homework Image" class="img-fluid rounded" style="max-height: 300px;">
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+
+
+
+           <div class="mb-2" style="overflow-x: auto;">
+  <strong>Answers:</strong><br>
+  <ul class="list-unstyled">
+    {% for answer in submission.answers.all %}
+      <li class="mb-2">
+        <strong>Q:</strong> {{ answer.question.text }}<br>
+        <strong>A:</strong> {{ answer.response }}
+      </li>
+    {% empty %}
+      <li>No answers provided.</li>
+    {% endfor %}
+  </ul>
+</div>
+
 
             <p class="mb-2">
               <strong>File:</strong>

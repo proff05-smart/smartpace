@@ -34,6 +34,21 @@ from .forms import HomeworkSubmissionForm, HomeworkForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import Group
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Homework
+from .forms import HomeworkForm
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render, get_object_or_404, redirect
+from .forms import TeacherMarkingForm
+from .models import HomeworkSubmission
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render, get_object_or_404, redirect
+from .forms import TeacherMarkingForm
+from .models import HomeworkSubmission
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .forms import SelectGroupForm
 
 
 # Models
@@ -1162,13 +1177,6 @@ def homework_submissions(request):
     submissions = HomeworkSubmission.objects.filter(student=request.user).order_by('-submitted_at')
     return render(request, 'homework/homework_submissions.html', {'submissions': submissions})
 
-
-
-@login_required
-def homework_submissions(request):
-    submissions = HomeworkSubmission.objects.filter(student=request.user).order_by('-submitted_at')
-    return render(request, 'homework/homework_submissions.html', {'submissions': submissions})
-
 @user_passes_test(lambda u: u.is_staff)
 def teacher_dashboard(request):
     homeworks = Homework.objects.all().order_by('-created_at')
@@ -1197,10 +1205,7 @@ def my_graded_homework(request):
     submissions = HomeworkSubmission.objects.filter(student=request.user, is_graded=True)
     return render(request, 'homework/my_graded_homework.html', {'submissions': submissions})
 
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .forms import SelectGroupForm
+
 
 @login_required
 def select_group_view(request):
@@ -1218,15 +1223,6 @@ def select_group_view(request):
         form = SelectGroupForm()
 
     return render(request, 'select_group.html', {'form': form})
-
-
-
-
-from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render, get_object_or_404, redirect
-from .forms import TeacherMarkingForm
-from .models import HomeworkSubmission
-
 @staff_member_required
 def grade_submission(request, submission_id):
     submission = get_object_or_404(HomeworkSubmission, id=submission_id)
@@ -1237,7 +1233,15 @@ def grade_submission(request, submission_id):
             return redirect('view_submissions', homework_id=submission.homework.id)
     else:
         form = TeacherMarkingForm(instance=submission)
-    return render(request, 'homework/grade_submission.html', {'form': form, 'submission': submission})
+
+    
+    homework = submission.homework
+
+    return render(request, 'homework/grade_submission.html', {
+        'form': form,
+        'submission': submission,
+        'homework': homework,
+    })
 
 from django.contrib.admin.views.decorators import staff_member_required
 
@@ -1250,11 +1254,7 @@ def view_submissions(request, homework_id):
         'submissions': submissions,
     })
 
-# views.py
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Homework
-from .forms import HomeworkForm
-
+@staff_member_required
 def edit_homework(request, pk):
     hw = get_object_or_404(Homework, pk=pk)
     if request.method == 'POST':

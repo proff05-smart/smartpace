@@ -202,15 +202,16 @@ class SelectGroupForm(forms.Form):
     )
 
 class TeacherMarkingForm(forms.ModelForm):
+    feedback = forms.CharField(
+        widget=CKEditor5Widget(config_name='default'),
+        required=False,
+        label='Feedback'
+    )
+
     class Meta:
         model = HomeworkSubmission
         fields = ['mark_percentage', 'feedback', 'is_graded']
         widgets = {
-            'feedback': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Enter specific feedback for the learner...'
-            }),
             'mark_percentage': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',

@@ -24,23 +24,23 @@
 #         return embed_html
 
 #     return mark_safe(re.sub(YOUTUBE_REGEX, replacer, text))
-import re
-from django import template
-from django.utils.safestring import mark_safe
+# import re
+# from django import template
+# from django.utils.safestring import mark_safe
 
-register = template.Library()
+# register = template.Library()
 
-YOUTUBE_REGEX = r'(https?://(?:www\.)?youtube\.com/watch\?v=([-\w]+)|https?://youtu\.be/([-\w]+))'
+# YOUTUBE_REGEX = r'(https?://(?:www\.)?youtube\.com/watch\?v=([-\w]+)|https?://youtu\.be/([-\w]+))'
 
-@register.filter
-def embed_youtube_links(value):
-    def replacer(match):
-        video_id = match.group(2) or match.group(3)
-        embed_code = f'''
-            <div class="ratio ratio-16x9 mb-3">
-                <iframe src="https://www.youtube.com/embed/{video_id}" frameborder="0" allowfullscreen></iframe>
-            </div>
-        '''
-        return embed_code
+# @register.filter
+# def embed_youtube_links(value):
+#     def replacer(match):
+#         video_id = match.group(2) or match.group(3)
+#         embed_code = f'''
+#             <div class="ratio ratio-16x9 mb-3">
+#                 <iframe src="https://www.youtube.com/embed/{video_id}" frameborder="0" allowfullscreen></iframe>
+#             </div>
+#         '''
+#         return embed_code
 
-    return mark_safe(re.sub(YOUTUBE_REGEX, replacer, value))
+#     return mark_safe(re.sub(YOUTUBE_REGEX, replacer, value))

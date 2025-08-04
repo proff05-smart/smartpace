@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% load static youtube_tags humanize widget_tweaks %}
 {% block content %}
+{% load custom_filters %}
+
 <div class="container-fluid px-2 px-sm-4 my-4">
 
 
@@ -125,18 +127,24 @@
       {% endif %}
 
       <!-- Media -->
-      {% if post.video %}
-      <video width="100%" controls class="mb-3 rounded">
-        <source src="{{ post.video.url }}" type="video/mp4">
-        Your browser does not support the video tag.
-      </video>
-      {% elif post.youtube_url %}
-      <div class="ratio ratio-16x9 mb-3">
-        <iframe class="border-0" allowfullscreen
-          src="https://www.youtube.com/embed/{{ post.youtube_url|cut:'https://youtu.be/'|cut:'https://www.youtube.com/watch?v=' }}">
-        </iframe>
-      </div>
-      {% endif %}
+     <!-- 🔹 Media Display -->
+{% load custom_filters %}  {# Make sure this matches your .py file name in templatetags/ #}
+
+{% if post.video %}
+  <video width="100%" controls class="mb-3 rounded">
+    <source src="{{ post.video.url }}" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+{% elif post.youtube_url %}
+  <div class="ratio ratio-16x9 mb-3">
+    <iframe class="border-0 w-100 rounded" allowfullscreen
+            src="https://www.youtube.com/embed/{{ post.youtube_url|youtube_id }}">
+    </iframe>
+  </div>
+{% endif %}
+
+
+
 
       <!-- Excerpt -->
       <p class="card-text">{{ post.excerpt|linebreaks }}</p>

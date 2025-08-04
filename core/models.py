@@ -396,7 +396,7 @@ class HomeworkSubmission(models.Model):
     submitted_file = CloudinaryField('file', blank=True, null=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
     answer_text = CKEditor5Field('Your Answer', blank=True, null=True)
-    feedback = models.TextField(blank=True, null=True)
+    feedback = CKEditor5Field('Feedback', blank=True, null=True)
     is_graded = models.BooleanField(default=False)
     mark_percentage = models.DecimalField(
         max_digits=5, decimal_places=2, blank=True, null=True,
