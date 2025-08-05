@@ -5,7 +5,6 @@ from django.forms import modelformset_factory
 from .models import Profile, Post, PostMedia, Comment, PDFDocument
 from .models import HomeworkSubmission, Homework
 from django_ckeditor_5.widgets import CKEditor5Widget
-from django_ckeditor_5.widgets import CKEditor5Widget
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User, Group
@@ -100,7 +99,7 @@ class PostForm(forms.ModelForm):
         widgets = {
             'category': forms.Select(attrs={'class': 'form-control'}),
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'content': forms.Textarea(attrs={'class': 'form-control'}),
+            'content': CKEditor5Widget(config_name='default'),
             'youtube_url': forms.URLInput(attrs={'class': 'form-control'}),
             'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'video': forms.ClearableFileInput(attrs={'class': 'form-control'}),
