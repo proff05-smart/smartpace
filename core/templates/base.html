@@ -1,7 +1,9 @@
 {% load static %}
 {% load group_tags %} 
 {% load custom_filters %}
-
+{% block extrahead %}
+  {{ form.media }}
+{% endblock %}
 
 <!DOCTYPE html>
 <html lang="en">
