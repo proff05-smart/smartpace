@@ -11,7 +11,8 @@
       </div>
 
       <h5>Question {{ current }} of {{ total }}</h5>
-      <p><strong>{{ question.text }}</strong></p>
+      <p><strong>{{ question.text|striptags }}</strong></p>
+
 
       {% if question.image %}
         <img src="{{ question.image.url }}" class="img-fluid mb-3" alt="Question Image">
