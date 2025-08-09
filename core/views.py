@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 import random
-
+import hashlib
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponseForbidden
 from django.urls import reverse
@@ -49,6 +49,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import SelectGroupForm
+from .models import DailyQuote
+from datetime import date
 
 
 # Models
@@ -228,8 +230,18 @@ def homepage_view(request):
 
     today = date.today()
     daily_fact = DailyFact.objects.filter(date=today).first()
-    all_users = User.objects.all().order_by('username')  
 
+    # Deterministic daily quote selection
+    quotes = list(DailyQuote.objects.all())
+    if quotes:
+        today_str = today.isoformat()  
+        hash_val = int(hashlib.sha256(today_str.encode()).hexdigest(), 16)
+        index = hash_val % len(quotes)
+        daily_quote = quotes[index]
+    else:
+        daily_quote = None
+
+    all_users = User.objects.all().order_by('username')  
     comment_form = CommentForm()
 
     return render(
@@ -241,6 +253,7 @@ def homepage_view(request):
             "posts": posts,
             "quiz_categories": quiz_categories,
             "daily_fact": daily_fact,
+            "daily_quote": daily_quote,  
             "all_users": all_users,
             "comment_form": comment_form,
         },
@@ -962,7 +975,7 @@ def all_notifications(request):
     notifications = (
         Notification.objects.filter(user=request.user)
         .select_related("sender__profile", "post")
-        .order_by("-created_at")
+        .order_by('-timestamp')
     )
     return render(request, "notifications/all.html", {"notifications": notifications})
 
@@ -970,23 +983,22 @@ def all_notifications(request):
 # =============================
 # ☑️ MARK SINGLE NOTIFICATION AS READ
 # =============================
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
 @login_required
 def mark_notification_as_read(request, notification_id):
-    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification = get_object_or_404(
+        Notification,
+        id=notification_id,
+        user=request.user
+    )
 
     if not notification.is_read:
         notification.is_read = True
-        notification.save()
+        notification.save(update_fields=['is_read'])
 
-    redirect_url = (
-        notification.post.get_absolute_url()
-        if hasattr(notification, 'post') and notification.post
-        else reverse("unread_notifications")
-    )
-    return redirect(redirect_url)
+    if notification.post:
+        return redirect(notification.post.get_absolute_url())
+    
+    return redirect('unread_notifications')
 
 
 
@@ -995,8 +1007,9 @@ def mark_notification_as_read(request, notification_id):
 # =============================
 @login_required
 def mark_all_notifications_as_read(request):
-    Notification.objects.filter(user=request.user, is_read=True).update(is_read=True)
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
     return redirect("unread_notifications")
+
 
 
 
@@ -1134,7 +1147,12 @@ def submit_homework(request, homework_id):
         submission = None
         is_editing = False
 
-    ImageFormSet = modelformset_factory(HomeworkSubmissionImage, form=HomeworkSubmissionImageForm, extra=3, can_delete=False)
+    ImageFormSet = modelformset_factory(
+        HomeworkSubmissionImage,
+        form=HomeworkSubmissionImageForm,
+        extra=3,
+        can_delete=False
+    )
 
     if request.method == 'POST':
         form = HomeworkSubmissionForm(request.POST, request.FILES, instance=submission)
@@ -1146,7 +1164,7 @@ def submit_homework(request, homework_id):
             sub.student = request.user
             sub.save()
 
-            # Save the uploaded images
+            # Save uploaded images
             for image_form in formset.cleaned_data:
                 if image_form and image_form.get('image'):
                     HomeworkSubmissionImage.objects.create(
@@ -1154,10 +1172,22 @@ def submit_homework(request, homework_id):
                         image=image_form['image']
                     )
 
+            # 🔔 Notify staff members
+            from django.contrib.auth.models import User
+            staff_users = User.objects.filter(is_staff=True)
+            for staff in staff_users:
+                Notification.objects.create(
+                    user=staff,
+                    sender=request.user,
+                    verb=f"{request.user.get_full_name() or request.user.username} submitted homework: {homework.title}",
+                    tone="info"
+                )
+
             if is_editing:
                 messages.success(request, "Submission updated successfully.")
             else:
                 messages.success(request, "Homework submitted successfully.")
+
             return redirect('homework_list')
     else:
         form = HomeworkSubmissionForm(instance=submission)
@@ -1172,6 +1202,7 @@ def submit_homework(request, homework_id):
 
 
 
+
 @login_required
 def homework_submissions(request):
     submissions = HomeworkSubmission.objects.filter(student=request.user).order_by('-submitted_at')
@@ -1181,13 +1212,24 @@ def homework_submissions(request):
 def teacher_dashboard(request):
     homeworks = Homework.objects.all().order_by('-created_at')
     return render(request, 'homework/teacher_dashboard.html', {'homeworks': homeworks})
-
 @user_passes_test(lambda u: u.is_staff)
 def create_homework(request):
     if request.method == 'POST':
         form = HomeworkForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            homework = form.save()  # Save and assign to variable
+
+            # Notify all users in the assigned group(s)
+            assigned_groups = homework.assigned_to.all()
+            for group in assigned_groups:
+                for student in group.user_set.all():
+                    Notification.objects.create(
+                        user=student,
+                        sender=request.user,
+                        verb=f"New homework assigned: {homework.title}",
+                        tone="warning"
+                    )
+
             messages.success(request, "Homework created successfully.")
             return redirect('teacher_dashboard')
     else:
@@ -1226,22 +1268,31 @@ def select_group_view(request):
 @staff_member_required
 def grade_submission(request, submission_id):
     submission = get_object_or_404(HomeworkSubmission, id=submission_id)
+
     if request.method == 'POST':
         form = TeacherMarkingForm(request.POST, instance=submission)
         if form.is_valid():
             form.save()
+
+            # Notify the student that their homework has been graded
+            Notification.objects.create(
+                user=submission.student,
+                sender=request.user,
+                verb=f"Your homework '{submission.homework.title}' has been graded.",
+                tone="success"
+            )
+
             return redirect('view_submissions', homework_id=submission.homework.id)
     else:
         form = TeacherMarkingForm(instance=submission)
 
-    
     homework = submission.homework
-
     return render(request, 'homework/grade_submission.html', {
         'form': form,
         'submission': submission,
         'homework': homework,
     })
+
 
 from django.contrib.admin.views.decorators import staff_member_required
 
@@ -1269,3 +1320,23 @@ def edit_homework(request, pk):
 def view_homework(request, pk):
     hw = get_object_or_404(Homework, pk=pk)
     return render(request, 'homework/view_homework.html', {'homework': hw})
+
+
+
+
+def daily_quote_view(request):
+    today = date.today()
+    quote_of_the_day = DailyQuote.objects.filter(created__date=today).first()
+
+    # If no quote has been assigned today, pick one randomly and save it with today's date
+    if not quote_of_the_day:
+        quotes = list(DailyQuote.objects.all())
+        if quotes:
+            quote_of_the_day = random.choice(quotes)
+        else:
+            quote_of_the_day = None
+
+    context = {
+        'quote': quote_of_the_day
+    }
+    return render(request, 'daily_quote.html', context)

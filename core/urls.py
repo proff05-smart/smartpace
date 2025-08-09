@@ -116,6 +116,7 @@ urlpatterns = [
     path('homework/<int:homework_id>/submit/', views.submit_homework, name='submit_homework'),
     path('homework/<int:pk>/edit/', views.edit_homework, name='edit_homework'),
     path('homework/<int:pk>/view/', views.view_homework, name='view_homework'),
+    path('daily-quote/', views.daily_quote_view, name='daily_quote'),
 
 
 
