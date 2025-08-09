@@ -134,7 +134,7 @@ class QuizCategory(models.Model):
 
 class Question(models.Model):
     category = models.ForeignKey(QuizCategory, on_delete=models.CASCADE)
-    text = models.TextField()
+    text = CKEditor5Field('Question Text', config_name='default')
     image = CloudinaryField('image', blank=True, null=True,resource_type="image")
     option_a = models.CharField(max_length=200)
     option_b = models.CharField(max_length=200)
@@ -146,7 +146,8 @@ class Question(models.Model):
         ('C', 'C'),
         ('D', 'D'),
     ])
-    explanation = models.TextField()
+    explanation = CKEditor5Field('Explanation', config_name='default')
+
 
 
 class QuizResult(models.Model):
