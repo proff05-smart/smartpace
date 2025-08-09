@@ -35,7 +35,8 @@
       <div class="card shadow-sm h-100 border">
         <div class="card-body">
           <h5 class="card-title">Question {{ forloop.counter }}</h5>
-          <p class="card-text fs-5">{{ ans.text }}</p>
+          <p class="card-text fs-5">{{ ans.text|striptags }}</p>
+
 
           <p class="card-text fw-semibold fs-6">
             Your answer:
@@ -55,7 +56,8 @@
           {% if ans.explanation %}
           <div class="mt-3">
             <h6 class="fw-bold text-info">Explanation:</h6>
-            <p class="text-dark fs-6">{{ ans.explanation }}</p>
+            <p class="text-dark fs-6">{{ ans.explanation|striptags }}</p>
+
           </div>
           {% endif %}
         </div>
