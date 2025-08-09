@@ -1,0 +1,8 @@
+{% if quote %}
+    <div class="quote-container">
+        <blockquote>"{{ quote.quote }}"</blockquote>
+        <p class="date">— {{ quote.created|date:"F j, Y" }}</p>
+    </div>
+{% else %}
+    <p>No quotes available.</p>
+{% endif %}

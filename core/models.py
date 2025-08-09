@@ -114,11 +114,15 @@ class Announcement(models.Model):
     message = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
 
-
 class DailyQuote(models.Model):
-    quote = models.CharField(max_length=255)
+    quote = CKEditor5Field('Text', config_name='default')  
     created = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-created'] 
+
+    def __str__(self):
+        return self.quote[:50] + ("..." if len(self.quote) > 50 else "")
 
 class Document(models.Model):
     title = models.CharField(max_length=100)
