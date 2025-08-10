@@ -117,6 +117,9 @@ urlpatterns = [
     path('homework/<int:pk>/edit/', views.edit_homework, name='edit_homework'),
     path('homework/<int:pk>/view/', views.view_homework, name='view_homework'),
     path('daily-quote/', views.daily_quote_view, name='daily_quote'),
+    path('post/<int:post_id>/react-ajax/', views.react_to_post_ajax, name='react_to_post_ajax'),
+    path('react/<int:post_id>/', views.react_view, name='react'),
+
 
 
 
