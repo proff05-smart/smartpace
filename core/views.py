@@ -51,6 +51,9 @@ from django.contrib import messages
 from .forms import SelectGroupForm
 from .models import DailyQuote
 from datetime import date
+from core.models import Reaction
+from django.db.models import Count
+
 
 
 # Models
@@ -214,17 +217,26 @@ def like_post_view(request, pk):
 
     return redirect("post_detail", pk=pk)
 
+from django.db.models import Count
 
 def homepage_view(request):
     settings = SiteSettings.objects.first()
     quiz_categories = QuizCategory.objects.all()
     categories = quiz_categories[:4]
 
-    all_posts = Post.objects.prefetch_related("comments").order_by("-created")
+    # ✅ Only published posts with valid pk
+    all_posts = (
+        Post.objects.filter(status="published")
+        .exclude(pk__isnull=True)
+        .prefetch_related("comments")
+        .order_by("-created")
+    )
+
     paginator = Paginator(all_posts, 25)
     page_number = request.GET.get("page")
     posts = paginator.get_page(page_number)
 
+    # Attach top-level comments
     for post in posts:
         post.top_level_comments = post.comments.filter(parent__isnull=True)
 
@@ -234,15 +246,24 @@ def homepage_view(request):
     # Deterministic daily quote selection
     quotes = list(DailyQuote.objects.all())
     if quotes:
-        today_str = today.isoformat()  
+        today_str = today.isoformat()
         hash_val = int(hashlib.sha256(today_str.encode()).hexdigest(), 16)
         index = hash_val % len(quotes)
         daily_quote = quotes[index]
     else:
         daily_quote = None
 
-    all_users = User.objects.all().order_by('username')  
+    all_users = User.objects.all().order_by("username")
     comment_form = CommentForm()
+
+    # ✅ Precompute reaction counts for template
+    reaction_counts = {
+        post.pk: {
+            key: post.reactions.filter(reaction_type=key).count()
+            for key, _ in Reaction.REACTION_CHOICES
+        }
+        for post in posts
+    }
 
     return render(
         request,
@@ -253,11 +274,13 @@ def homepage_view(request):
             "posts": posts,
             "quiz_categories": quiz_categories,
             "daily_fact": daily_fact,
-            "daily_quote": daily_quote,  
+            "daily_quote": daily_quote,
             "all_users": all_users,
             "comment_form": comment_form,
+            "reaction_counts": reaction_counts,  
         },
     )
+
 
 # @login_required
 # def like_post_view(request, pk):
@@ -807,7 +830,15 @@ def post_detail(request, pk):
 
     return render(request, "post_detail.html", context)
 
+    reaction_counts = {
+        key: post.reactions.filter(reaction_type=key).count()
+        for key, _ in Reaction.REACTION_CHOICES
+    }
 
+    return render(request, "post_detail.html", {
+        "post": post,
+        "reaction_counts": reaction_counts
+    })
 
 
 # def download_post_pdf(request, post_id):
@@ -1340,3 +1371,82 @@ def daily_quote_view(request):
         'quote': quote_of_the_day
     }
     return render(request, 'daily_quote.html', context)
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+
+@login_required
+@require_POST
+def react_to_post_ajax(request, post_id):
+    from .models import Post, Reaction
+    post = get_object_or_404(Post, id=post_id)
+    reaction_type = request.POST.get("reaction_type")
+
+    if reaction_type not in dict(Reaction.REACTION_CHOICES):
+        return JsonResponse({"error": "Invalid reaction"}, status=400)
+
+    reaction, created = Reaction.objects.get_or_create(user=request.user, post=post)
+
+    # Remove reaction if clicking same type again
+    if not created and reaction.reaction_type == reaction_type:
+        reaction.delete()
+    else:
+        reaction.reaction_type = reaction_type
+        reaction.save()
+
+    # Updated counts
+    counts = {
+        key: post.reactions.filter(reaction_type=key).count()
+        for key, _ in Reaction.REACTION_CHOICES
+    }
+
+    return JsonResponse({"counts": counts})
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from .models import Post, Reaction
+
+@require_POST
+@login_required
+def react_view(request, post_id):
+    reaction_type = request.POST.get("reaction_type")
+    post = get_object_or_404(Post, pk=post_id)
+
+    if reaction_type not in dict(Reaction.REACTION_CHOICES):
+        return JsonResponse({"error": "Invalid reaction type"}, status=400)
+
+    reaction, created = Reaction.objects.get_or_create(
+        user=request.user,
+        post=post,
+        defaults={"reaction_type": reaction_type},
+    )
+    if not created:
+        if reaction.reaction_type == reaction_type:
+            # If the same reaction clicked again, remove it (toggle off)
+            reaction.delete()
+        else:
+            # Update reaction type
+            reaction.reaction_type = reaction_type
+            reaction.save()
+
+    # Calculate counts for each reaction type on this post
+    counts = (
+        Reaction.objects.filter(post=post)
+        .values("reaction_type")
+        .order_by()
+        .annotate(count=Count("id"))
+
+    )
+    counts_dict = {item["reaction_type"]: item["count"] for item in counts}
+
+    # Fill zeros for reaction types without any reactions
+    for key, _ in Reaction.REACTION_CHOICES:
+        counts_dict.setdefault(key, 0)
+
+    return JsonResponse({"counts": counts_dict})

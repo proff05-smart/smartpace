@@ -8,14 +8,8 @@
 
 {% block content %}
 <div class="container-fluid px-0 mt-0">
-
-
   <!-- 🔹 Post Title -->
   <h2 class="fw-bold">{{ post.title }}</h2>
-
-
-
-
   <!-- 🔹 Post Metadata -->
   <div class="text-muted mb-3 d-flex flex-wrap align-items-center gap-2">
     <a href="{% url 'user_profile' post.author.username %}" class="d-flex align-items-center text-decoration-none text-reset">
@@ -39,7 +33,6 @@
     {% endif %}
     <span>• Category: <em>{{ post.category.name }}</em></span>
   </div>
-
 <!-- 🔹 Media Display -->
 {% if post.video %}
   <video width="100%" controls class="mb-3 rounded">
@@ -51,8 +44,6 @@
             frameborder="0" allowfullscreen class="w-100 rounded border-0"></iframe>
   </div>
 {% endif %}
-
-
 
   <!-- 🔹 Post Image -->
   <img src="{% if post.image %}{{ post.image.url }}{% elif post.get_first_image_url %}{{ post.get_first_image_url }}{% else %}https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/default.jpg{% endif %}"
@@ -70,21 +61,14 @@
     </div>
   </div>
 </div>
-
-
-
-
-  <a href="{% url 'profile_dashboard' %}">
+  <!-- <a href="{% url 'profile_dashboard' %}">
   <img src="{% if request.user.profile.photo %}{{ request.user.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
      alt="Profile Photo"
      class="rounded-circle"
      width="40" height="40"
      style="object-fit: cover;">
 
-</a>
-
- 
-      
+</a> -->      
 
 <!-- 🔹 Edit/Delete Buttons -->
 {% if user == post.author %}
@@ -98,13 +82,24 @@
 <hr>
 
 <!-- ❤️ Like Button for Post -->
-<form method="POST" action="{% url 'like_post' post.pk %}" class="d-inline">
+ <form method="POST" action="{% url 'like_post' post.pk %}" class="d-inline">
   {% csrf_token %}
   <input type="hidden" name="next" value="{{ request.get_full_path }}">
   <button type="submit" class="btn btn-sm {% if user in post.likes.all %}btn-danger{% else %}btn-outline-danger{% endif %}">
     ❤️ {{ post.likes.count }}
-  </button>
-</form>
+  </button> 
+  <div class="reactions" data-post-id="{{ post.id }}">
+    {% for key, emoji in post.reactions.model.REACTION_CHOICES %}
+        <button type="button"
+                class="btn btn-sm btn-light reaction-btn"
+                data-reaction="{{ key }}">
+            {{ emoji }}
+            <span class="count">{{ reaction_counts.key }}</span>
+        </button>
+    {% endfor %}
+</div>
+</form> 
+
 
 <a href="{% url 'post_likes_list' post.pk %}" class="btn btn-link btn-sm">
   See who liked
@@ -185,5 +180,36 @@ function toggleLike(postId) {
 }
 </script>
 
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".reaction-btn").forEach(button => {
+        button.addEventListener("click", function () {
+            const postId = this.closest(".reactions").dataset.postId;
+            const reactionType = this.dataset.reaction;
+
+            fetch(`/post/${postId}/react-ajax/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: `reaction_type=${reactionType}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.counts) {
+                    // Update counts dynamically
+                    document.querySelectorAll(`.reactions[data-post-id="${postId}"] .reaction-btn`).forEach(btn => {
+                        const type = btn.dataset.reaction;
+                        btn.querySelector(".count").textContent = data.counts[type] || 0;
+                    });
+                }
+            });
+        });
+    });
+});
+</script> 
 
 {% endblock %}
