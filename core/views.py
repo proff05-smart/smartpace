@@ -51,8 +51,18 @@ from django.contrib import messages
 from .forms import SelectGroupForm
 from .models import DailyQuote
 from datetime import date
-from core.models import Reaction
+from .models import Reaction
 from django.db.models import Count
+from django.utils import timezone
+from datetime import date
+import hashlib
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from .models import SiteSettings, Post, DailyFact, DailyQuote, QuizCategory, DailyQuiz
+from django.contrib.auth.models import User
+from .forms import CommentForm
+from .models import Reaction
+from django.utils.html import strip_tags
 
 
 
@@ -217,7 +227,7 @@ def like_post_view(request, pk):
 
     return redirect("post_detail", pk=pk)
 
-from django.db.models import Count
+
 
 def homepage_view(request):
     settings = SiteSettings.objects.first()
@@ -243,7 +253,7 @@ def homepage_view(request):
     today = date.today()
     daily_fact = DailyFact.objects.filter(date=today).first()
 
-    # Deterministic daily quote selection
+    # ✅ Deterministic daily quote selection
     quotes = list(DailyQuote.objects.all())
     if quotes:
         today_str = today.isoformat()
@@ -252,6 +262,9 @@ def homepage_view(request):
         daily_quote = quotes[index]
     else:
         daily_quote = None
+
+    # ✅ Daily Quiz selection
+    daily_quiz = DailyQuiz.get_today_quiz()
 
     all_users = User.objects.all().order_by("username")
     comment_form = CommentForm()
@@ -275,11 +288,13 @@ def homepage_view(request):
             "quiz_categories": quiz_categories,
             "daily_fact": daily_fact,
             "daily_quote": daily_quote,
+            "daily_quiz": daily_quiz,  
             "all_users": all_users,
             "comment_form": comment_form,
             "reaction_counts": reaction_counts,  
         },
     )
+
 
 
 # @login_required
@@ -1167,10 +1182,20 @@ def homework_list(request):
 from django.forms import modelformset_factory
 from .models import HomeworkSubmissionImage
 from .forms import HomeworkSubmissionForm, HomeworkSubmissionImageForm
+from django.utils import timezone
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render
+from django.forms import modelformset_factory
+from .models import Homework, HomeworkSubmission, HomeworkSubmissionImage, Notification
+from .forms import HomeworkSubmissionForm, HomeworkSubmissionImageForm
 
 @login_required
 def submit_homework(request, homework_id):
     homework = get_object_or_404(Homework, id=homework_id)
+
+    can_submit = timezone.now() <= homework.due_date
+
     try:
         submission = HomeworkSubmission.objects.get(homework=homework, student=request.user)
         is_editing = True
@@ -1186,6 +1211,10 @@ def submit_homework(request, homework_id):
     )
 
     if request.method == 'POST':
+        if not can_submit:
+            messages.error(request, "Sorry, the submission deadline has passed.")
+            return redirect('homework_list')
+
         form = HomeworkSubmissionForm(request.POST, request.FILES, instance=submission)
         formset = ImageFormSet(request.POST, request.FILES, queryset=HomeworkSubmissionImage.objects.none())
 
@@ -1203,7 +1232,7 @@ def submit_homework(request, homework_id):
                         image=image_form['image']
                     )
 
-            # 🔔 Notify staff members
+            # Notify staff
             from django.contrib.auth.models import User
             staff_users = User.objects.filter(is_staff=True)
             for staff in staff_users:
@@ -1214,11 +1243,7 @@ def submit_homework(request, homework_id):
                     tone="info"
                 )
 
-            if is_editing:
-                messages.success(request, "Submission updated successfully.")
-            else:
-                messages.success(request, "Homework submitted successfully.")
-
+            messages.success(request, "Submission updated successfully." if is_editing else "Homework submitted successfully.")
             return redirect('homework_list')
     else:
         form = HomeworkSubmissionForm(instance=submission)
@@ -1228,7 +1253,9 @@ def submit_homework(request, homework_id):
         'form': form,
         'formset': formset,
         'homework': homework,
-        'is_editing': is_editing
+        'is_editing': is_editing,
+        'can_submit': can_submit,
+        'due_date_js': homework.due_date.strftime("%Y-%m-%dT%H:%M:%S")  # For JS countdown
     })
 
 
@@ -1450,3 +1477,51 @@ def react_view(request, post_id):
         counts_dict.setdefault(key, 0)
 
     return JsonResponse({"counts": counts_dict})
+from django.shortcuts import render, get_object_or_404
+from .models import DailyQuiz
+
+def quiz_detail(request, pk):
+    quiz = get_object_or_404(DailyQuiz, pk=pk)
+    return render(request, 'core/quiz_detail.html', {'quiz': quiz})
+
+
+from django.shortcuts import render, get_object_or_404
+from .models import DailyQuiz
+from django.shortcuts import get_object_or_404, render
+def quiz_detail(request, pk):
+    quiz = get_object_or_404(DailyQuiz, pk=pk)
+    quiz.question = strip_tags(quiz.question)
+    feedback = None
+    selected_option = None
+
+    if request.method == 'POST':
+        selected_option = request.POST.get('answer')
+        if selected_option == quiz.correct_answer:
+            feedback = {
+                'type': 'success',
+                'message': '✅ Correct! Well done.',
+                'correct_answer': quiz.correct_answer,
+            }
+        else:
+            feedback = {
+                'type': 'danger',
+                'message': f'❌ Wrong. The correct answer is {quiz.correct_answer}.',
+                'correct_answer': quiz.correct_answer,
+            }
+
+    options = [
+        ('A', quiz.option_a),
+        ('B', quiz.option_b),
+        ('C', quiz.option_c),
+        ('D', quiz.option_d),
+    ]
+
+    return render(request, 'core/quiz_detail.html', {
+        'quiz': quiz,
+        'feedback': feedback,
+        'selected_option': selected_option,
+        'options': options,
+        
+    })
+
+

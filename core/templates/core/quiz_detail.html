@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>{{ quiz.title }}</h2>
+  {{ quiz.question }}
+  
+{% if quiz.image %}
+  <img src="{{ quiz.image.url }}" alt="Quiz Image" class="img-fluid mb-3">
+{% endif %}
+
+  {% if feedback %}
+    <div class="mb-3">
+      <strong>Your answer:</strong>
+      {% for option, label in options %}
+        {% if option == selected_option %}
+          <span class="{% if option == feedback.correct_answer %}text-success{% else %}text-danger{% endif %}">
+            {{ option }}. {{ label }}
+            {% if option == feedback.correct_answer %}
+              &#10004; 
+            {% else %}
+              &#10008; 
+            {% endif %}
+          </span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    {% for option, label in options %}
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="answer" value="{{ option }}" id="option{{ option }}"
+          {% if selected_option == option %}checked{% endif %}
+          {% if feedback %}disabled{% endif %}>
+        <label class="form-check-label
+          {% if feedback %}
+            {% if option == feedback.correct_answer %}
+              text-success fw-bold
+            {% elif option == selected_option %}
+              text-danger fw-bold
+            {% endif %}
+          {% endif %}
+        " for="option{{ option }}">
+          {{ option }}. {{ label }}
+          {% if feedback %}
+            {% if option == feedback.correct_answer %}
+              &#10004;  <!-- Check mark -->
+            {% elif option == selected_option %}
+              &#10008;  <!-- Cross mark -->
+            {% endif %}
+          {% endif %}
+        </label>
+      </div>
+    {% endfor %}
+
+    {% if not feedback %}
+      <button type="submit" class="btn btn-primary mt-3">Submit Answer</button>
+    {% endif %}
+  </form>
+
+  {% if feedback %}
+    <div class="alert alert-{{ feedback.type }} mt-3">
+      {{ feedback.message }}
+    </div>
+
+    <h5>Explanation:</h5>
+    <p>{{ quiz.explanation }}</p>
+
+    <div class="mt-4 d-flex justify-content-between">
+      {% if prev_question_id %}
+        <a href="{% url 'quiz-question' prev_question_id %}" class="btn btn-secondary">&laquo; Previous</a>
+      {% else %}
+        <div></div>
+      {% endif %}
+
+      {% if next_question_id %}
+        <a href="{% url 'quiz-question' next_question_id %}" class="btn btn-secondary">Next &raquo;</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

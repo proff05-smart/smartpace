@@ -119,6 +119,7 @@ urlpatterns = [
     path('daily-quote/', views.daily_quote_view, name='daily_quote'),
     path('post/<int:post_id>/react-ajax/', views.react_to_post_ajax, name='react_to_post_ajax'),
     path('react/<int:post_id>/', views.react_view, name='react'),
+     path('quiz/<int:pk>/', views.quiz_detail, name='quiz_detail'),
 
 
 

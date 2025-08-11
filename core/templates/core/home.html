@@ -61,6 +61,24 @@
   setInterval(updateClock, 1000);
   updateClock(); 
 </script>
+<!-- Daily Quiz -->
+<div class="card my-4 shadow-sm">
+  <div class="card-header bg-primary text-white">
+    📅 Daily Quiz
+  </div>
+  <div class="card-body">
+    {% if daily_quiz %}
+      <h5>{{ daily_quiz.title }}</h5>
+      <p>{{ daily_quiz.description|truncatewords:25 }}</p>
+      <a href="{% url 'quiz_detail' daily_quiz.id %}" class="btn btn-success">
+        Start Today’s Quiz
+      </a>
+    {% else %}
+      <p class="text-muted">No quiz set for today.</p>
+    {% endif %}
+  </div>
+</div>
+
 {% if daily_quote %}
   <div class="daily-quote border rounded p-3 my-3 bg-light shadow-sm mx-auto" style="max-width: 600px;">
     <div class="fs-5 fst-italic text-center text-md-start">

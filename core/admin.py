@@ -3,6 +3,7 @@ from .models import HomeworkSubmissionImage
 from django.utils.html import format_html
 from django.contrib import admin
 from .models import HomeworkSubmission
+from .models import DailyQuiz 
 
 from .models import (
     Profile, Category, Comment, Announcement, DailyQuote,
@@ -100,3 +101,12 @@ class HomeworkSubmissionAdmin(admin.ModelAdmin):
         return format_html(obj.answer_text)
 
     rendered_answer_text.short_description = "Your Answer"
+
+    
+    
+
+@admin.register(DailyQuiz)
+class DailyQuizAdmin(admin.ModelAdmin):
+    list_display = ('date_created', 'title', 'correct_answer')
+    list_filter = ('date_created', 'correct_answer')
+    search_fields = ('title', 'question')

@@ -13,6 +13,9 @@ from django.db import models
 from django.contrib.auth.models import Group
 #from ckeditor_uploader.fields import CKEditor5Field
 from cloudinary.models import CloudinaryField
+from django.utils import timezone
+
+
 
 
 
@@ -350,7 +353,7 @@ class Homework(models.Model):
     subject = models.CharField(max_length=100)
     image = CloudinaryField('image', blank=True, null=True)
     grade = models.CharField(max_length=20, choices=GRADE_CHOICES, default="Grade 8")  
-    due_date = models.DateField()
+    due_date = models.DateTimeField()  # changed from DateField to DateTimeField
     attachment = CloudinaryField('file', blank=True, null=True)  
     created_at = models.DateTimeField(auto_now_add=True)
     assigned_to = models.ManyToManyField(
@@ -360,6 +363,10 @@ class Homework(models.Model):
 
     def __str__(self):
         return self.title
+
+    def is_due(self):
+        
+        return timezone.now() > self.due_date
 
 
 class HomeworkImage(models.Model):
@@ -442,3 +449,32 @@ class Reaction(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.reaction_type} on {self.post}"
+
+from django.utils import timezone
+from django.db import models
+
+class DailyQuiz(models.Model):
+    title = models.CharField(max_length=255, null=True, blank=True)
+    question = models.TextField()
+    image = CloudinaryField('image', blank=True, null=True,resource_type="image")
+    option_a = models.CharField(max_length=200)
+    option_b = models.CharField(max_length=200)
+    option_c = models.CharField(max_length=200)
+    option_d = models.CharField(max_length=200)
+
+    explanation = models.TextField(blank=True, null=True) 
+    correct_answer = models.CharField(
+        max_length=1,
+        choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')],
+        default='A'
+    )
+
+    date_created = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.title if self.title else f"Quiz {self.id} - {self.question[:30]}..."
+
+    @classmethod
+    def get_today_quiz(cls):
+        today = timezone.localdate()
+        return cls.objects.filter(date_created__date=today).first()

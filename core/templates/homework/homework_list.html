@@ -21,7 +21,7 @@
               </a>
             {% elif request.user.is_authenticated and not request.user.is_staff %}
               <a href="{% url 'submit_homework' hw.id %}" class="btn btn-sm btn-success mt-auto">
-                ✅ Submit Homework
+                Submit Homework
               </a>
             {% endif %}
           </div>
