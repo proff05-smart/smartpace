@@ -9,13 +9,13 @@
     <p><strong>Instructions:</strong> {{ homework.instructions|safe }}</p>
     <p><strong>Subject:</strong> {{ homework.subject }}</p>
     <p><strong>Due Date:</strong> {{ homework.due_date }}</p>
+    <p><strong>Time Remaining:</strong> <span id="countdown"></span></p>
   </div>
 
   {% if is_editing %}
     <div class="alert alert-info">
       You already submitted this homework. You can update your submission below.
     </div>
-
     {% if form.instance.submitted_file %}
       <p><strong>Previously Submitted File:</strong>
         <a href="{{ form.instance.submitted_file.url }}" target="_blank">View File</a>
@@ -29,40 +29,75 @@
     </div>
   {% endif %}
 
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.media }}
+  {% if can_submit %}
+    <div id="submission-form-wrapper">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.media }}
 
-    <div class="mb-3">
-      {{ form.grade.label_tag }}
-      {{ form.grade }}
-    </div>
-
-    <div class="mb-3">
-      {{ form.answer_text.label_tag }}
-      {{ form.answer_text }}
-    </div>
-
-    <div class="mb-3">
-      {{ form.submitted_file.label_tag }}
-      {{ form.submitted_file }}
-    </div>
-
-    <hr>
-    <h5 class="mb-3">Upload Extra Images (Optional)</h5>
-    {{ formset.management_form }}
-    <div class="row">
-      {% for image_form in formset %}
-        <div class="col-12 col-sm-6 col-md-4 mb-3">
-          {{ image_form.image.label_tag }}
-          {{ image_form.image }}
+        <div class="mb-3">
+          {{ form.grade.label_tag }}
+          {{ form.grade }}
         </div>
-      {% endfor %}
-    </div>
 
-    <button type="submit" class="btn btn-success mt-3 w-100 w-md-auto">
-      {% if is_editing %}Update Submission{% else %}Submit Homework{% endif %}
-    </button>
-  </form>
+        <div class="mb-3">
+          {{ form.answer_text.label_tag }}
+          {{ form.answer_text }}
+        </div>
+
+        <div class="mb-3">
+          {{ form.submitted_file.label_tag }}
+          {{ form.submitted_file }}
+        </div>
+
+        <hr>
+        <h5 class="mb-3">Upload Extra Images (Optional)</h5>
+        {{ formset.management_form }}
+        <div class="row">
+          {% for image_form in formset %}
+            <div class="col-12 col-sm-6 col-md-4 mb-3">
+              {{ image_form.image.label_tag }}
+              {{ image_form.image }}
+            </div>
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-success mt-3 w-100 w-md-auto">
+          {% if is_editing %}Update Submission{% else %}Submit Homework{% endif %}
+        </button>
+      </form>
+    </div>
+  {% else %}
+    <div class="alert alert-danger mt-3">
+      The submission deadline has passed. You can no longer submit this homework.
+    </div>
+  {% endif %}
 </div>
+
+<script>
+  const dueDate = new Date("{{ due_date_js }}").getTime();
+  const countdownElem = document.getElementById("countdown");
+  const formWrapper = document.getElementById("submission-form-wrapper");
+
+  const timer = setInterval(function() {
+    const now = new Date().getTime();
+    const distance = dueDate - now;
+
+    if (distance <= 0) {
+      clearInterval(timer);
+      countdownElem.innerHTML = "Deadline passed";
+      if (formWrapper) {
+        formWrapper.innerHTML = '<div class="alert alert-danger mt-3">The submission deadline has passed. You can no longer submit this homework.</div>';
+      }
+      return;
+    }
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    countdownElem.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  }, 1000);
+</script>
 {% endblock %}
