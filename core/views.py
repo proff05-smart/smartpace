@@ -63,6 +63,24 @@ from django.contrib.auth.models import User
 from .forms import CommentForm
 from .models import Reaction
 from django.utils.html import strip_tags
+from django.shortcuts import render, get_object_or_404
+from .models import DailyQuiz
+from django.shortcuts import get_object_or_404, render
+from .models import DailyQuizAttempt
+from django.utils import timezone
+from django.contrib import messages
+from django.shortcuts import redirect, get_object_or_404, render
+from django.utils.html import strip_tags
+from django.db.models import OuterRef, Subquery
+from django.db.models import F, Q, Count, OuterRef, Subquery
+from django.shortcuts import render, get_object_or_404
+from .models import DailyQuiz
+from django.db.models import OuterRef, Subquery
+from django.utils.html import strip_tags
+from django.utils import timezone
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+
 
 
 
@@ -1477,37 +1495,75 @@ def react_view(request, post_id):
         counts_dict.setdefault(key, 0)
 
     return JsonResponse({"counts": counts_dict})
-from django.shortcuts import render, get_object_or_404
-from .models import DailyQuiz
-
-def quiz_detail(request, pk):
-    quiz = get_object_or_404(DailyQuiz, pk=pk)
-    return render(request, 'core/quiz_detail.html', {'quiz': quiz})
 
 
-from django.shortcuts import render, get_object_or_404
-from .models import DailyQuiz
-from django.shortcuts import get_object_or_404, render
 def quiz_detail(request, pk):
     quiz = get_object_or_404(DailyQuiz, pk=pk)
     quiz.question = strip_tags(quiz.question)
     feedback = None
     selected_option = None
+    today = timezone.localdate()
+
+    # Count current user's attempts for today
+    user_attempt_count = DailyQuizAttempt.objects.filter(
+        quiz=quiz,
+        user=request.user,
+        date_attempted__date=today
+    ).count()
+
+    # Subquery to get latest attempt ID per user
+    latest_attempt_ids = DailyQuizAttempt.objects.filter(
+        quiz=quiz,
+        date_attempted__date=today,
+        user=OuterRef('user')
+    ).order_by('-date_attempted').values('id')[:1]
+
+    # All latest attempts (unique per user)
+    latest_attempts_today = DailyQuizAttempt.objects.filter(
+        id__in=Subquery(latest_attempt_ids)
+    ).select_related('user')
+
+    total_users_today = latest_attempts_today.count()
+
+    # Split correct and wrong lists
+    wrong_users_today = latest_attempts_today.filter(is_correct=False)
+    correct_users_today = latest_attempts_today.filter(is_correct=True)
 
     if request.method == 'POST':
+        if user_attempt_count >= 1:
+            messages.warning(request, "You have already attempted this quiz today. Try again tomorrow.")
+            return redirect('quiz_detail', pk=quiz.pk)
+
         selected_option = request.POST.get('answer')
-        if selected_option == quiz.correct_answer:
-            feedback = {
-                'type': 'success',
-                'message': '✅ Correct! Well done.',
-                'correct_answer': quiz.correct_answer,
-            }
-        else:
-            feedback = {
-                'type': 'danger',
-                'message': f'❌ Wrong. The correct answer is {quiz.correct_answer}.',
-                'correct_answer': quiz.correct_answer,
-            }
+        is_correct = (selected_option == quiz.correct_answer)
+
+        feedback = {
+            'type': 'success' if is_correct else 'danger',
+            'message': '✅ Correct! Well done.' if is_correct else f'❌ Wrong. The correct answer is {quiz.correct_answer}.',
+            'correct_answer': quiz.correct_answer,
+        }
+
+        DailyQuizAttempt.objects.create(
+            quiz=quiz,
+            user=request.user,
+            selected_option=selected_option,
+            is_correct=is_correct,
+            date_attempted=timezone.now()
+        )
+
+        # Recalculate after saving
+        latest_attempt_ids = DailyQuizAttempt.objects.filter(
+            quiz=quiz,
+            date_attempted__date=today,
+            user=OuterRef('user')
+        ).order_by('-date_attempted').values('id')[:1]
+
+        latest_attempts_today = DailyQuizAttempt.objects.filter(
+            id__in=Subquery(latest_attempt_ids)
+        ).select_related('user')
+        total_users_today = latest_attempts_today.count()
+        wrong_users_today = latest_attempts_today.filter(is_correct=False)
+        correct_users_today = latest_attempts_today.filter(is_correct=True)
 
     options = [
         ('A', quiz.option_a),
@@ -1521,7 +1577,9 @@ def quiz_detail(request, pk):
         'feedback': feedback,
         'selected_option': selected_option,
         'options': options,
-        
+        'user_attempt_count': user_attempt_count,
+        'total_users_today': total_users_today,
+        'latest_attempts_today': latest_attempts_today,
+        'wrong_users_today': wrong_users_today,
+        'correct_users_today': correct_users_today,  
     })
-
-

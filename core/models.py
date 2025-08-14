@@ -1,7 +1,6 @@
 
 from django.db import models
 from django.contrib.auth.models import User
-from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -14,6 +13,9 @@ from django.contrib.auth.models import Group
 #from ckeditor_uploader.fields import CKEditor5Field
 from cloudinary.models import CloudinaryField
 from django.utils import timezone
+from django.db import models
+from django.contrib.auth.models import User
+from cloudinary.models import CloudinaryField
 
 
 
@@ -478,3 +480,21 @@ class DailyQuiz(models.Model):
     def get_today_quiz(cls):
         today = timezone.localdate()
         return cls.objects.filter(date_created__date=today).first()
+
+
+
+
+class DailyQuizAttempt(models.Model):
+    quiz = models.ForeignKey(DailyQuiz, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    selected_option = models.CharField(max_length=1, blank=True, null=True)
+    is_correct = models.BooleanField(default=False)
+    date_attempted = models.DateTimeField(auto_now_add=True)
+    photo = CloudinaryField('image', blank=True, null=True)
+
+    class Meta:
+        ordering = ['-date_attempted']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.quiz} - {self.date_attempted.date()}"
+

@@ -298,6 +298,16 @@ setInterval(loadNotifications, 30000);
 </nav>
 
 
+<div class="mt-5">
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} mt-3">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+</div>
+
 
 
 
