@@ -80,7 +80,11 @@ from django.utils.html import strip_tags
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-
+from django.contrib import messages
+from django.shortcuts import redirect, render
+from .forms import HomeworkForm
+from .models import Homework, Notification
+import cloudinary.uploader
 
 
 
@@ -1289,15 +1293,34 @@ def teacher_dashboard(request):
     homeworks = Homework.objects.all().order_by('-created_at')
     return render(request, 'homework/teacher_dashboard.html', {'homeworks': homeworks})
 @user_passes_test(lambda u: u.is_staff)
+
+
+
+@login_required
 def create_homework(request):
     if request.method == 'POST':
         form = HomeworkForm(request.POST, request.FILES)
         if form.is_valid():
-            homework = form.save()  # Save and assign to variable
+            homework = form.save(commit=False)
 
-            # Notify all users in the assigned group(s)
-            assigned_groups = homework.assigned_to.all()
-            for group in assigned_groups:
+            pdf_file = request.FILES.get('pdf_file')  # must match your form/model field
+            if pdf_file:
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        pdf_file,
+                        resource_type="raw",  # ✅ Forces non-image upload (PDF, DOCX, ZIP)
+                        format="pdf", 
+                        folder="homeworks"
+                    )
+                    homework.pdf_file = upload_result.get('secure_url')
+                except Exception as e:
+                    messages.error(request, f"File upload failed: {e}")
+                    return render(request, 'homework/create_homework.html', {'form': form})
+
+            homework.save()
+
+            # Notify students
+            for group in homework.assigned_to.all():
                 for student in group.user_set.all():
                     Notification.objects.create(
                         user=student,
@@ -1310,6 +1333,7 @@ def create_homework(request):
             return redirect('teacher_dashboard')
     else:
         form = HomeworkForm()
+
     return render(request, 'homework/create_homework.html', {'form': form})
 
 
@@ -1583,3 +1607,35 @@ def quiz_detail(request, pk):
         'wrong_users_today': wrong_users_today,
         'correct_users_today': correct_users_today,  
     })
+# views.py
+from django.http import HttpResponse
+from django.template.loader import get_template
+from django.shortcuts import get_object_or_404
+from xhtml2pdf import pisa
+from .models import Homework
+
+def homework_pdf(request, pk):
+    homework = get_object_or_404(Homework, pk=pk)
+    
+    # Build absolute URLs for images
+    images_with_urls = []
+    for img in homework.images.all():
+        images_with_urls.append(request.build_absolute_uri(img.image.url))
+    
+    template_path = 'homework/homework_pdf.html'
+    context = {
+        'homework': homework,
+        'images': images_with_urls,  # Pass pre-built URLs
+    }
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{homework.title}.pdf"'
+    
+    template = get_template(template_path)
+    html = template.render(context)
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    
+    if pisa_status.err:
+        return HttpResponse('Error generating PDF', status=500)
+    
+    return response

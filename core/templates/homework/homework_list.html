@@ -13,7 +13,13 @@
           <div class="card-body d-flex flex-column">
             <h5 class="card-title">{{ hw.title }}</h5>
             <p class="card-text mb-1"><strong>📅 Due:</strong> {{ hw.due_date }}</p>
-            <p class="card-text small"><strong></strong> {{ hw.description|truncatechars:100|safe }}</p>
+            <p class="card-text small">{{ hw.description|truncatechars:100|safe }}</p>
+
+            {% if hw.pdf_file %}
+              <a href="{{ hw.pdf_file.url }}" class="btn btn-sm btn-outline-secondary mb-2" download>
+                📄 Download PDF
+              </a>
+            {% endif %}
 
             {% if request.user.is_superuser %}
               <a href="{% url 'view_submissions' hw.id %}" class="btn btn-sm btn-outline-primary mt-auto">
@@ -29,7 +35,7 @@
       </div>
     {% empty %}
       <div class="col-12 text-muted">
-        <p>You have not created any homework yet.</p>
+        <p>No homework assigned yet.</p>
       </div>
     {% endfor %}
   </div>

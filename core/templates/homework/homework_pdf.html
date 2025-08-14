@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ homework.title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h2 { margin-bottom: 10px; }
+        .section { margin-bottom: 15px; }
+        p { margin: 4px 0; }
+        strong { display: inline-block; width: 120px; }
+        hr { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h2>{{ homework.title }}</h2>
+
+    <div class="section">
+        <p><strong>Instructions:</strong> {{ homework.instructions|safe }}</p>
+        <p><strong>Subject:</strong> {{ homework.subject }}</p>
+        <p><strong>Due Date:</strong> {{ homework.due_date }}</p>
+    </div>
+
+    {% if homework.description %}
+    <div class="section">
+        <strong>Details:</strong>
+        <div>{{ homework.description|safe }}</div>
+    </div>
+    {% endif %}
+
+    {% if homework.extra_notes %}
+    <div class="section">
+        <strong>Extra Notes:</strong>
+        <div>{{ homework.extra_notes|safe }}</div>
+    </div>
+    {% endif %}
+
+    {% if homework.resources.all %}
+    <hr>
+    <h4>Attached Resources</h4>
+    <ul>
+        {% for file in homework.resources.all %}
+            <li>{{ file.name }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</body>
+</html>

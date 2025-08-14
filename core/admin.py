@@ -53,7 +53,7 @@ class HomeworkImageInline(admin.TabularInline):
 
 class HomeworkAdmin(admin.ModelAdmin):
     inlines = [HomeworkImageInline]
-    list_display = ('title', 'subject', 'grade', 'due_date')
+    list_display = ('title', 'subject','due_date')
 
 # Register Homework with its custom admin
 admin.site.register(Homework, HomeworkAdmin)
@@ -64,7 +64,7 @@ class HomeworkSubmissionImageInline(admin.TabularInline):
     extra = 3
 from django.contrib import admin
 from .models import HomeworkSubmission
-from .models import HomeworkSubmissionImage  # if needed
+from .models import HomeworkSubmissionImage  
 
 class HomeworkSubmissionImageInline(admin.TabularInline):
     model = HomeworkSubmissionImage
@@ -85,7 +85,7 @@ class HomeworkSubmissionAdmin(admin.ModelAdmin):
         'rendered_answer_text',
         'submitted_file',
         'grade',
-        'mark_percentage',  # 👈 Added this line
+        'mark_percentage',  
         'feedback',
         'is_graded',
     )
