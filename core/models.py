@@ -16,6 +16,10 @@ from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import User
 from cloudinary.models import CloudinaryField
+from cloudinary.models import CloudinaryField
+from django.db import models
+from django.contrib.auth.models import User
+
 
 
 
@@ -333,7 +337,7 @@ avatar = CloudinaryField('image', default='https://res.cloudinary.com/your_cloud
 
 
 
-# Grade options — customize as needed
+
 GRADE_CHOICES = [
     ('Grade 1', 'Grade 1'),
     ('Grade 2', 'Grade 2'),
@@ -354,8 +358,9 @@ class Homework(models.Model):
     instructions = CKEditor5Field('Homework instructions')
     subject = models.CharField(max_length=100)
     image = CloudinaryField('image', blank=True, null=True)
-    grade = models.CharField(max_length=20, choices=GRADE_CHOICES, default="Grade 8")  
-    due_date = models.DateTimeField()  # changed from DateField to DateTimeField
+    #grade = models.CharField(max_length=20, choices=GRADE_CHOICES, default="Grade 12")  
+    pdf_file = models.FileField(upload_to='homework_pdfs/', blank=True, null=True) 
+    due_date = models.DateTimeField() 
     attachment = CloudinaryField('file', blank=True, null=True)  
     created_at = models.DateTimeField(auto_now_add=True)
     assigned_to = models.ManyToManyField(
@@ -388,6 +393,7 @@ from cloudinary.models import CloudinaryField
 
 User = get_user_model()
 
+
 GRADE_CHOICES = [
     ('Grade 1', 'Grade 1'),
     ('Grade 2', 'Grade 2'),
@@ -404,10 +410,21 @@ GRADE_CHOICES = [
 ]
 
 class HomeworkSubmission(models.Model):
-    homework = models.ForeignKey('Homework', on_delete=models.CASCADE, related_name='submissions')
+    homework = models.ForeignKey(
+        'Homework', on_delete=models.CASCADE, related_name='submissions'
+    )
     student = models.ForeignKey(User, on_delete=models.CASCADE)
-    grade = models.CharField(max_length=20, choices=GRADE_CHOICES, default="Grade 8", blank=True, null=True)
-    submitted_file = CloudinaryField('file', blank=True, null=True)
+    grade = models.CharField(
+        max_length=20, choices=GRADE_CHOICES, default="Grade 8", blank=True, null=True
+    )
+    
+    submitted_file = CloudinaryField(
+        resource_type='raw',  
+        folder='homework_submissions',
+        blank=True,
+        null=True
+    )
+
     submitted_at = models.DateTimeField(auto_now_add=True)
     answer_text = CKEditor5Field('Your Answer', blank=True, null=True)
     feedback = CKEditor5Field('Feedback', blank=True, null=True)
