@@ -6,6 +6,8 @@ from .views import learner_analytics
 from core.views import unread_notifications_json
 from .views import all_notifications
 from .views import select_group_view
+from django.contrib.auth.decorators import login_required
+
 
 from core.views import (
     unread_notifications_json,
@@ -121,6 +123,8 @@ urlpatterns = [
     path('react/<int:post_id>/', views.react_view, name='react'),
     path('quiz/<int:pk>/', views.quiz_detail, name='quiz_detail'),
     path('homework/<int:pk>/pdf/', views.homework_pdf, name='homework_pdf'),
+    path("quiz/<int:quiz_id>/", login_required(views.quiz_detail), name="quiz_detail"),
+
 
 
 
