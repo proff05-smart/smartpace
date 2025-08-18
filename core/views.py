@@ -1303,12 +1303,12 @@ def create_homework(request):
         if form.is_valid():
             homework = form.save(commit=False)
 
-            pdf_file = request.FILES.get('pdf_file')  # must match your form/model field
+            pdf_file = request.FILES.get('pdf_file')  
             if pdf_file:
                 try:
                     upload_result = cloudinary.uploader.upload(
                         pdf_file,
-                        resource_type="raw",  # ✅ Forces non-image upload (PDF, DOCX, ZIP)
+                        resource_type="raw",  
                         format="pdf", 
                         folder="homeworks"
                     )
@@ -1519,8 +1519,6 @@ def react_view(request, post_id):
         counts_dict.setdefault(key, 0)
 
     return JsonResponse({"counts": counts_dict})
-
-
 def quiz_detail(request, pk):
     quiz = get_object_or_404(DailyQuiz, pk=pk)
     quiz.question = strip_tags(quiz.question)
@@ -1528,12 +1526,14 @@ def quiz_detail(request, pk):
     selected_option = None
     today = timezone.localdate()
 
-    # Count current user's attempts for today
-    user_attempt_count = DailyQuizAttempt.objects.filter(
-        quiz=quiz,
-        user=request.user,
-        date_attempted__date=today
-    ).count()
+    user_attempt_count = 0
+    if request.user.is_authenticated:
+        # Only count attempts for logged-in users
+        user_attempt_count = DailyQuizAttempt.objects.filter(
+            quiz=quiz,
+            user=request.user,
+            date_attempted__date=today
+        ).count()
 
     # Subquery to get latest attempt ID per user
     latest_attempt_ids = DailyQuizAttempt.objects.filter(
@@ -1548,12 +1548,14 @@ def quiz_detail(request, pk):
     ).select_related('user')
 
     total_users_today = latest_attempts_today.count()
-
-    # Split correct and wrong lists
     wrong_users_today = latest_attempts_today.filter(is_correct=False)
     correct_users_today = latest_attempts_today.filter(is_correct=True)
 
     if request.method == 'POST':
+        if not request.user.is_authenticated:
+            messages.warning(request, "You must be logged in to attempt this quiz.")
+            return redirect('login')  # or wherever your login URL is
+
         if user_attempt_count >= 1:
             messages.warning(request, "You have already attempted this quiz today. Try again tomorrow.")
             return redirect('quiz_detail', pk=quiz.pk)
@@ -1607,6 +1609,7 @@ def quiz_detail(request, pk):
         'wrong_users_today': wrong_users_today,
         'correct_users_today': correct_users_today,  
     })
+
 # views.py
 from django.http import HttpResponse
 from django.template.loader import get_template
