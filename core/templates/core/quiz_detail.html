@@ -108,7 +108,8 @@
   {% if feedback %}
     <div class="mt-4">
       <h5 class="fw-bold">Explanation:</h5>
-      <p>{{ quiz.explanation }}</p>
+      <p>{{ quiz.explanation|striptags }}</p>
+
     </div>
 
     <!-- Navigation Buttons -->
