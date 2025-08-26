@@ -481,7 +481,7 @@ class DailyQuiz(models.Model):
     option_c = models.CharField(max_length=200)
     option_d = models.CharField(max_length=200)
 
-    explanation = models.TextField(blank=True, null=True) 
+    explanation = CKEditor5Field('Explanation', blank=True, null=True)
     correct_answer = models.CharField(
         max_length=1,
         choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')],

@@ -39,8 +39,15 @@ INSTALLED_APPS = [
     'django_ckeditor_5',
     'channels',
     'chat',
+    'django_crontab',
+
 
 ]
+
+CRONJOBS = [
+    ('0 0 */5 * *', 'quiz.cron.reset_leaderboard'),  
+]
+
 
 
 ASGI_APPLICATION = 'smartpace.asgi.application'

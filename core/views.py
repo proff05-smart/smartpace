@@ -85,6 +85,8 @@ from django.shortcuts import redirect, render
 from .forms import HomeworkForm
 from .models import Homework, Notification
 import cloudinary.uploader
+from django.db.models import Sum, Count
+from django.contrib.auth.models import User
 
 
 
@@ -651,8 +653,7 @@ def quiz_result(request):
             "quiz_title": quiz_title,
         },
     )
-from django.db.models import Sum, Count
-from django.contrib.auth.models import User
+
 @login_required
 def quiz_leaderboard(request):
     leaderboard = (
@@ -695,6 +696,7 @@ def quiz_leaderboard(request):
         })
 
     return render(request, "quiz/leaderboard.html", {"leaderboard": leaderboard_with_badges})
+
 
 
 @login_required
