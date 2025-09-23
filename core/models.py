@@ -19,6 +19,10 @@ from cloudinary.models import CloudinaryField
 from cloudinary.models import CloudinaryField
 from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils.timezone import now
+from cloudinary.models import CloudinaryField
 
 
 
@@ -253,10 +257,7 @@ class DailyFact(models.Model):
         return f"Fact for {self.date}"
 
 
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils.timezone import now
-from cloudinary.models import CloudinaryField
+
 
 class Notification(models.Model):
     
