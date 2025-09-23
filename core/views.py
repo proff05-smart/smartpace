@@ -44,6 +44,15 @@ from .forms import (
     HomeworkForm, HomeworkSubmissionForm, HomeworkSubmissionImageForm,
     TeacherMarkingForm, SelectGroupForm, UserLoginForm
 )
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.urls import reverse
+from django.contrib.auth.decorators import login_required
+
+from .models import Notification
+
+DEFAULT_PHOTO_URL = "https://res.cloudinary.com/dwp0xtvyb/image/upload/v123456789/default_profile.png"
+
 
 
 def register_view(request):
@@ -120,24 +129,7 @@ def post_create_view(request):
         {"post_form": post_form, "media_formset": media_formset}, )
 
 
-def post_list_view(request):
-    query = request.GET.get("q", "")
-    post_list = Post.objects.all().order_by("-created")
 
-    if query:
-        post_list = post_list.filter(title__icontains=query)
-
-    paginator = Paginator(post_list, 25)  
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        "posts": page_obj,
-        "page_obj": page_obj,
-        "query": query,
-        "total_results": post_list.count(),
-    }
-    return render(request, "core/post_list.html", context)
    
 
 @login_required
@@ -147,15 +139,6 @@ def post_likes_list(request, pk):
     return render(request, 'post_likes_list.html', {'post': post, 'users': users})
 
 
-@login_required
-def like_post_view(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    if request.user in post.likes.all():
-        post.likes.remove(request.user)
-    else:
-        post.likes.add(request.user)
-
-    return redirect(f"{reverse('home')}#post-{pk}")  
     
 def homepage_view(request):
     settings = SiteSettings.objects.first()
@@ -258,70 +241,6 @@ def toggle_like_ajax(request):
         "likes_count": post.likes.count()
     })
 
-@login_required
-def add_comment(request, pk):
-    post = get_object_or_404(Post, id=pk)
-    parent_id = request.POST.get("parent_id")
-    parent_comment = get_object_or_404(Comment, id=parent_id, post=post) if parent_id else None
-
-    if request.method == "POST":
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.post = post
-            comment.user = request.user
-            comment.parent = parent_comment
-            comment.approved = True
-            comment.save()
-
-            if request.headers.get("x-requested-with") == "XMLHttpRequest":
-                html = render_to_string(
-                    "partials/comment_item.html",
-                    {"comment": comment, "post": post},
-                    request=request
-                )
-                return JsonResponse({
-                    "success": True,
-                    "reply_html": html,
-                    "comment_id": comment.id
-                })
-
-    return redirect("post_detail", pk=pk)
-@login_required
-def add_reply(request, post_id, comment_id):
-    """
-    Handles reply submission to a comment via POST or AJAX.
-    """
-    post = get_object_or_404(Post, id=post_id)
-    parent_comment = get_object_or_404(Comment, id=comment_id, post=post)
-
-    if request.method == "POST":
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            reply = form.save(commit=False)
-            reply.user = request.user
-            reply.post = post
-            reply.parent = parent_comment
-            reply.approved = True
-            reply.save()
-
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                html = render_to_string(
-                    'partials/comment_item.html',
-                    {'comment': reply, 'post': post},
-                    request=request
-                )
-                return JsonResponse({'success': True, 'html': html, 'comment_id': reply.id})
-
-            messages.success(request, "Reply posted successfully.")
-        else:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-
-            messages.error(request, "There was an error posting your reply.")
-
-    return redirect("post_detail", post_id=post.id)
- 
 
 @login_required
 def load_reply_form(request, parent_id):
@@ -687,40 +606,26 @@ def delete_post(request, pk):
 
     return render(request, "confirm_delete.html", {"post": post})
 
-
-
-
 def post_list(request):
-    posts = Post.objects.filter(status="published").order_by("-created_at")
-    paginator = Paginator(posts, 6)
+    query = request.GET.get("q", "")
+    posts = Post.objects.all().order_by("-created_at")  
 
+    if query:
+        posts = posts.filter(title__icontains=query)
+
+    paginator = Paginator(posts, 25)  
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(request, "core/post_list.html", {"page_obj": page_obj})
+    context = {
+        "posts": page_obj,
+        "page_obj": page_obj,
+        "query": query,
+        "total_results": posts.count(),
+    }
 
+    return render(request, "core/post_list.html", context)
 
-
-@login_required
-def like_post(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    if request.user in post.likes.all():
-        post.likes.remove(request.user)
-    else:
-        post.likes.add(request.user)
-    return redirect(request.POST.get('next', 'home'))
-
-@login_required
-def add_comment_home(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    if request.method == "POST":
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            c = form.save(commit=False)
-            c.post = post
-            c.user = request.user
-            c.save()
-    return redirect(request.POST.get('next', 'home'))
 
 
 from django.shortcuts import redirect, get_object_or_404
@@ -838,37 +743,76 @@ def user_profile(request, username):
         },
     )
 @login_required
-def reply_to_comment(request, post_id, parent_id):
-    parent_comment = get_object_or_404(Comment, id=parent_id)
-    post = get_object_or_404(Post, id=post_id)
+def add_comment(request, post_id, parent_id=None):
+    post = get_object_or_404(Post, pk=post_id)
+    parent_comment = get_object_or_404(Comment, pk=parent_id) if parent_id else None
 
-    if request.method == "POST":
-        body = request.POST.get("body", "").strip()
-        if body:
-            reply = Comment.objects.create(
-                user=request.user,
+    # Handle JSON (AJAX) request
+    if request.content_type == "application/json":
+        try:
+            data = json.loads(request.body)
+            body = data.get("body", "").strip()
+            if not body:
+                return JsonResponse({"success": False, "error": "Comment cannot be empty."}, status=400)
+
+            comment = Comment.objects.create(
                 post=post,
+                user=request.user,
                 body=body,
-                parent=parent_comment
+                parent=parent_comment,
+                approved=True
             )
 
-            if parent_comment.user != request.user:
+            if parent_comment and parent_comment.user != request.user:
                 Notification.objects.create(
-                    user=parent_comment.user,        
-                    sender=request.user,             
-                    verb="replied to",               
+                    user=parent_comment.user,
+                    sender=request.user,
+                    verb="replied to",
                     post=post,
-                    comment=reply,                   
-                    tone="info"                      
+                    comment=comment,
+                    tone="info"
                 )
 
-            return redirect(f"{reverse('post_detail', kwargs={'pk': post.id})}#comment-{reply.id}")
+            html = render_to_string("partials/comment_item.html", {"comment": comment, "post": post}, request=request)
+            return JsonResponse({"success": True, "html": html, "comment_id": comment.id})
 
-    return redirect("home", pk=post.id)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "Invalid JSON."}, status=400)
+
+    # Handle standard form submission
+    else:
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.user = request.user
+            comment.parent = parent_comment
+            comment.approved = True
+            comment.save()
+
+            if parent_comment and parent_comment.user != request.user:
+                Notification.objects.create(
+                    user=parent_comment.user,
+                    sender=request.user,
+                    verb="replied to",
+                    post=post,
+                    comment=comment,
+                    tone="info"
+                )
+
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                html = render_to_string("partials/comment_item.html", {"comment": comment, "post": post}, request=request)
+                return JsonResponse({"success": True, "html": html, "comment_id": comment.id})
+
+            next_url = request.POST.get("next")
+            return redirect(next_url or f"{reverse('post_detail', kwargs={'pk': post.id})}#comment-{comment.id}")
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+        messages.error(request, "There was an error posting your comment.")
+        return redirect("home")
 
 
-def is_root(self):
-    return self.parent is None
 
 
 @login_required
@@ -879,107 +823,6 @@ def user_analytics(request):
     )
     return render(request, "admin/user_analytics.html", {"data": user_data})
 
-
-
-def notifications(request):
-    return render(request, "notifications.html")
-
-
-
-
-# =============================
-# 🔔 UNREAD NOTIFICATIONS (JSON)
-# =============================
-@login_required
-def unread_notifications_json(request):
-    notifications = Notification.objects.filter(
-        user=request.user, is_read=False
-    ).select_related("sender__profile", "post")
-
-    default_photo_url = "https://res.cloudinary.com/dwp0xtvyb/image/upload/v123456789/default_profile.png"
-    
-    data = []
-    for n in notifications:
-        message = f"{n.sender.username} {n.verb}"
-        if n.post and "your post" not in n.verb:
-            message += f" your post '{n.post.title}'"
-
-        # Safe photo handling
-        try:
-            photo_url = n.sender.profile.photo.url if n.sender.profile.photo else default_photo_url
-        except Exception:
-            photo_url = default_photo_url
-
-        data.append({
-            "id": n.id,
-            "message": message,
-            "url": reverse("mark_notification_as_read", args=[n.id]),
-            "tone": n.tone,
-            "photo": photo_url,
-        })
-
-    return JsonResponse(data, safe=False)
-
-
-# =============================
-# 📥 UNREAD NOTIFICATIONS (HTML)
-# =============================
-@login_required
-def unread_notifications(request):
-    notifications = Notification.objects.filter(
-        user=request.user, is_read=False
-    ).select_related("sender__profile", "post")
-
-    notifications.update(is_read=True)
-
-    return render(
-        request, "notifications/unread.html", {"notifications": notifications}
-    )
-
-
-
-# =============================
-# 📚 ALL NOTIFICATIONS (Read + Unread)
-# =============================
-@login_required
-def all_notifications(request):
-    notifications = (
-        Notification.objects.filter(user=request.user)
-        .select_related("sender__profile", "post")
-        .order_by('-timestamp')
-    )
-    return render(request, "notifications/all.html", {"notifications": notifications})
-
-
-# =============================
-# ☑️ MARK SINGLE NOTIFICATION AS READ
-# =============================
-@login_required
-def mark_notification_as_read(request, notification_id):
-    notification = get_object_or_404(
-        Notification,
-        id=notification_id,
-        user=request.user
-    )
-
-    if not notification.is_read:
-        notification.is_read = True
-        notification.save(update_fields=['is_read'])
-
-    if notification.post:
-        return redirect(notification.post.get_absolute_url())
-    
-    return redirect('unread_notifications')
-
-
-
-# =============================
-# 🧹 MARK ALL AS READ (Button)
-# =============================
-@login_required
-def mark_all_notifications_as_read(request):
-    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
-    return redirect("unread_notifications")
 
 
 
@@ -1026,30 +869,6 @@ def like_reply(request):
     )
 
 
-@login_required
-def add_reply_ajax(request, post_pk, parent_id):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        body = data.get("body", "").strip()
-        parent_comment = Comment.objects.get(pk=parent_id)
-        post = Post.objects.get(pk=post_pk)
-
-        if body:
-            reply = Comment.objects.create(
-                post=post,
-                user=request.user,
-                body=body,
-                parent=parent_comment
-            )
-            html = render_to_string("partials/comment_item.html", {
-                "comment": reply,
-                "post": post,
-                "user": request.user,
-            })
-
-            return JsonResponse({"success": True, "reply_html": html})
-
-    return JsonResponse({"success": False}, status=400)
 
 
 
@@ -1322,39 +1141,6 @@ def daily_quote_view(request):
     return render(request, 'daily_quote.html', context)
 
 
-
-
-
-@login_required
-@require_POST
-def react_to_post_ajax(request, post_id):
-    from .models import Post, Reaction
-    post = get_object_or_404(Post, id=post_id)
-    reaction_type = request.POST.get("reaction_type")
-
-    if reaction_type not in dict(Reaction.REACTION_CHOICES):
-        return JsonResponse({"error": "Invalid reaction"}, status=400)
-
-    reaction, created = Reaction.objects.get_or_create(user=request.user, post=post)
-
-    # Remove reaction if clicking same type again
-    if not created and reaction.reaction_type == reaction_type:
-        reaction.delete()
-    else:
-        reaction.reaction_type = reaction_type
-        reaction.save()
-
-    # Updated counts
-    counts = {
-        key: post.reactions.filter(reaction_type=key).count()
-        for key, _ in Reaction.REACTION_CHOICES
-    }
-
-    return JsonResponse({"counts": counts})
-
-
-
-
 @require_POST
 @login_required
 def react_view(request, post_id):
@@ -1371,14 +1157,14 @@ def react_view(request, post_id):
     )
     if not created:
         if reaction.reaction_type == reaction_type:
-            # If the same reaction clicked again, remove it (toggle off)
+            
             reaction.delete()
         else:
-            # Update reaction type
+           
             reaction.reaction_type = reaction_type
             reaction.save()
 
-    # Calculate counts for each reaction type on this post
+    
     counts = (
         Reaction.objects.filter(post=post)
         .values("reaction_type")
@@ -1393,6 +1179,8 @@ def react_view(request, post_id):
         counts_dict.setdefault(key, 0)
 
     return JsonResponse({"counts": counts_dict})
+
+
 def quiz_detail(request, pk):
     quiz = get_object_or_404(DailyQuiz, pk=pk)
     quiz.question = strip_tags(quiz.question)
@@ -1510,3 +1298,97 @@ def homework_pdf(request, pk):
         return HttpResponse('Error generating PDF', status=500)
     
     return response
+
+
+
+DEFAULT_PHOTO_URL = "https://res.cloudinary.com/dwp0xtvyb/image/upload/v123456789/default_profile.png"
+
+
+# =============================
+# 🔔 NOTIFICATIONS HOME
+# =============================
+@login_required
+def notifications(request):
+    """Landing page for notifications."""
+    return render(request, "notifications/index.html")
+
+
+# =============================
+# 📥 UNREAD NOTIFICATIONS (HTML & JSON)
+# =============================
+@login_required
+def unread_notifications(request, as_json=False):
+    """
+    Returns unread notifications either as HTML or JSON.
+    If as_json=True, returns a JSON response (for AJAX/live updates).
+    """
+    notifications = Notification.objects.filter(
+        user=request.user, is_read=False
+    ).select_related("sender__profile", "post")
+
+    if as_json:
+        data = []
+        for n in notifications:
+            message = f"{n.sender.username} {n.verb}"
+            if n.post and "your post" not in n.verb:
+                message += f" your post '{n.post.title}'"
+
+            photo_url = getattr(getattr(n.sender, 'profile', None), 'photo', None)
+            photo_url = photo_url.url if photo_url else DEFAULT_PHOTO_URL
+
+            data.append({
+                "id": n.id,
+                "message": message,
+                "url": reverse("mark_notification_as_read", args=[n.id]),
+                "tone": n.tone,
+                "photo": photo_url,
+            })
+        return JsonResponse(data, safe=False)
+
+    # HTML version: mark as read before rendering
+    notifications.update(is_read=True)
+    return render(request, "notifications/unread.html", {"notifications": notifications})
+
+
+# Shortcut view for JSON API
+@login_required
+def unread_notifications_json(request):
+    return unread_notifications(request, as_json=True)
+
+
+# =============================
+# 📚 ALL NOTIFICATIONS
+# =============================
+@login_required
+def all_notifications(request):
+    notifications = Notification.objects.filter(user=request.user)\
+        .select_related("sender__profile", "post")\
+        .order_by('-timestamp')
+    return render(request, "notifications/all.html", {"notifications": notifications})
+
+
+# =============================
+# ☑️ MARK SINGLE NOTIFICATION AS READ
+# =============================
+@login_required
+def mark_notification_as_read(request, notification_id):
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+
+    if not notification.is_read:
+        notification.is_read = True
+        notification.save(update_fields=['is_read'])
+
+    # Redirect to post if applicable
+    if notification.post:
+        return redirect(notification.post.get_absolute_url())
+    
+    return redirect('unread_notifications')
+
+
+# =============================
+# 🧹 MARK ALL NOTIFICATIONS AS READ
+# =============================
+@login_required
+def mark_all_notifications_as_read(request):
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return redirect("unread_notifications")
