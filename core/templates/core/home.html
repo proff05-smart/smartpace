@@ -147,10 +147,11 @@
   {% endif %}
 
   <!-- Posts -->
-  <div class="w-100">
+   <div class="container-fluid p-0">
+
     {% if posts %}
       {% for post in posts %}
-        <div class="mb-5 border-bottom p-3">
+        <div class="mb-0 border-bottom p-0">
           <!-- Media -->
           {% if post.video %}
             <video class="w-100 d-block" controls>
@@ -188,10 +189,13 @@
             {% endif %}
 
             <!-- Likes -->
-            <button class="btn btn-outline-primary like-btn" data-post-id="{{ post.id }}">
-              <span class="like-icon">{% if user in post.likes.all %}❤️{% else %}🤍{% endif %}</span>
-              <span class="like-count">{{ post.likes.count }}</span>
-                      </button>
+           <a href="#"
+   class="like-btn text-decoration-none"
+   data-post-id="{{ post.id }}">
+   {% if user in post.likes.all %}❤️{% else %}🤍{% endif %}
+   <span class="like-count ms-1">{{ post.likes.count }}</span>
+</a>
+
           <!-- Reactions -->
           <div class="reactions d-inline ms-2" data-post-id="{{ post.id }}">
             {% if post.reactions and post.reactions.model.REACTION_CHOICES %}
@@ -216,22 +220,28 @@
             <a href="{% url 'post_likes_list' post.pk %}" class="btn btn-link btn-sm ms-2">See who liked</a>
 
             <!-- Comment Form -->
-            <div class="card mb-4">
-              <div class="card-body">
+            
                 <h5 class="card-title">💬 Add a Comment</h5>
                 <form method="POST" action="{% url 'post_detail' post.pk %}">
                   {% csrf_token %}
                   <div class="mb-3">{{ comment_form.body|add_class:"form-control" }}</div>
-                  <button type="submit" class="btn btn-sm btn-primary">Post Comment</button>
+                  <a href="/comments/new/" class="btn btn-sm btn-primary">Post Comment</a>
+
                 </form>
               </div>
             </div>
 
             <!-- Comments Section -->
             {% with top_level_comments=comments_map|dict_get:post.pk %}
-              <button class="btn btn-sm btn-outline-primary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#comments-{{ post.pk }}">
-                Show/Hide Comments
-              </button>
+              <a class="btn btn-sm btn-outline-primary mb-2"
+                data-bs-toggle="collapse"
+                href="#comments-{{ post.pk }}"
+                role="button"
+                aria-expanded="false"
+                aria-controls="comments-{{ post.pk }}">
+                Show Comments
+              </a>
+
               <div class="collapse" id="comments-{{ post.pk }}">
                 {% if top_level_comments %}
                   <h5 class="mb-3">{{ top_level_comments.count }} Comment{{ top_level_comments.count|pluralize }}</h5>
@@ -286,6 +296,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <!-- ====== Inline CSS for Dark Mode & Styling ====== -->
 <style>
+
+  /* Ensure all media scale on small screens */
+video,
+img,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
   /* ===== Body & Dark Mode ===== */
   body {
     background: #f3f0f0;
@@ -371,6 +390,35 @@ body.dark-mode section.social-bar {
   .btn, .card {
     transition: all 0.3s ease;
   }
+
+  /* Phones: shrink heading and padding */
+@media (max-width: 576px) {
+  section.text-center.p-5 {
+    padding: 2rem 1rem;
+  }
+  section.text-center h1.display-4 {
+    font-size: 1.8rem;
+  }
+  #live-clock {
+    font-size: 0.9rem;
+    padding: 0.2rem 0.5rem;
+  }
+  .daily-quote {
+    padding: 1rem;
+    font-size: 0.95rem;
+  }
+  .alert.fs-5 {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+
 </style>
 
 
