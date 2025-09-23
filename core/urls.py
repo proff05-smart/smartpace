@@ -39,7 +39,13 @@ urlpatterns = [
     path('edit-profile/', views.edit_profile, name='profile_edit'),
     path('profile/', views.profile_view, name='profile_view'),
 
+    
+    path('', views.homepage_view, name='home'),
+    path('like/<int:pk>/', views.like_post, name='like_post'),
+    path('comment/<int:pk>/', views.add_comment_home, name='add_comment_home'),
 
+    # urls.py
+    path("post/toggle-like/", views.toggle_like_ajax, name="toggle_like_ajax"),
 
 
 

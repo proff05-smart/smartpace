@@ -1,128 +1,51 @@
+# Standard library
 from datetime import date, timedelta
 import random
 import hashlib
+import json
+
+
+# Django / third-party
+from django import forms
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponseForbidden
+from django.http import (
+    JsonResponse, HttpResponse, HttpResponseRedirect, HttpResponseForbidden
+)
 from django.urls import reverse
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
-from django.core.paginator import Paginator
-from django.db.models import Sum, Count
-from django.utils import timezone
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from django.http import HttpResponse
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login
-from django.shortcuts import render, redirect
-from .forms import UserLoginForm
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404
-from .models import Post
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Homework, HomeworkSubmission
-from .forms import HomeworkSubmissionForm
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Homework, HomeworkSubmission
-from .forms import HomeworkSubmissionForm, HomeworkForm
+from django.contrib.auth import (
+    authenticate, login, logout, get_user_model
+)
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from django.contrib.auth.models import Group
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Homework
-from .forms import HomeworkForm
 from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render, get_object_or_404, redirect
-from .forms import TeacherMarkingForm
-from .models import HomeworkSubmission
-from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render, get_object_or_404, redirect
-from .forms import TeacherMarkingForm
-from .models import HomeworkSubmission
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .forms import SelectGroupForm
-from .models import DailyQuote
-from datetime import date
-from .models import Reaction
-from django.db.models import Count
-from django.utils import timezone
-from datetime import date
-import hashlib
 from django.core.paginator import Paginator
-from django.shortcuts import render
-from .models import SiteSettings, Post, DailyFact, DailyQuote, QuizCategory, DailyQuiz
-from django.contrib.auth.models import User
-from .forms import CommentForm
-from .models import Reaction
-from django.utils.html import strip_tags
-from django.shortcuts import render, get_object_or_404
-from .models import DailyQuiz
-from django.shortcuts import get_object_or_404, render
-from .models import DailyQuizAttempt
+from django.db.models import (
+    F, Q, Sum, Count, Avg, OuterRef, Subquery
+)
+from django.template.loader import get_template
 from django.utils import timezone
-from django.contrib import messages
-from django.shortcuts import redirect, get_object_or_404, render
 from django.utils.html import strip_tags
-from django.db.models import OuterRef, Subquery
-from django.db.models import F, Q, Count, OuterRef, Subquery
-from django.shortcuts import render, get_object_or_404
-from .models import DailyQuiz
-from django.db.models import OuterRef, Subquery
-from django.utils.html import strip_tags
-from django.utils import timezone
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib import messages
-from django.contrib import messages
-from django.shortcuts import redirect, render
-from .forms import HomeworkForm
-from .models import Homework, Notification
+from django.views.decorators.http import require_POST
+from xhtml2pdf import pisa
 import cloudinary.uploader
-from django.db.models import Sum, Count
-from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+from django.forms import modelformset_factory
 
-
-
-# Models
-from .models import (
-    Profile,
-    Post,
-    Comment,
-    Category,
-    PostMedia,
-    SupportInfo,
-    SiteSettings,
-    PDFDocument,
-    QuizCategory,
-    Question,
-    QuizResult,
-    DailyFact,
-    Notification,
-)
-
-# Forms
-from .forms import (
-    RegisterForm,
-    ProfileForm,
-    UserForm,
-    UserProfileForm,
-    PostForm,
-    CommentForm,
-    PDFUploadForm,
-)
-
-# Utilities
 from .utils import is_user_online
+from .models import (
+    Profile, Post, Comment, Category, PostMedia, SupportInfo, SiteSettings,
+    PDFDocument, QuizCategory, Question, QuizResult, DailyFact, Notification,
+    Homework, HomeworkSubmission, HomeworkSubmissionImage,
+    DailyQuote, Reaction, DailyQuiz, DailyQuizAttempt
+)
+from .forms import (
+    RegisterForm, ProfileForm, UserForm, UserProfileForm,
+    PostForm, PostMediaForm, CommentForm, PDFUploadForm,
+    HomeworkForm, HomeworkSubmissionForm, HomeworkSubmissionImageForm,
+    TeacherMarkingForm, SelectGroupForm, UserLoginForm
+)
 
 
-# Register user
 def register_view(request):
     if request.method == "POST":
         form = RegisterForm(request.POST)
@@ -136,7 +59,6 @@ def register_view(request):
     return render(request, "core/register.html", {"form": form})
 
 
-# Login user
 def login_view(request):
     form = UserLoginForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -150,13 +72,6 @@ def login_view(request):
             form.add_error(None, 'Invalid username or password')
     return render(request, 'login.html', {'form': form})
 
-
-
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
-from .forms import ProfileForm
-from .models import Profile
 @login_required
 def profile_view(request):
     profile, created = Profile.objects.get_or_create(user=request.user)
@@ -173,10 +88,7 @@ def profile_view(request):
     return render(request, "core/profile.html", {"form": form})
 
 
-from django import forms
-from django.forms import modelformset_factory
-from .models import Post, PostMedia
-from .forms import PostForm, PostMediaForm 
+
 
 PostMediaFormSet = modelformset_factory(PostMedia, form=PostMediaForm, extra=5)
 
@@ -185,12 +97,10 @@ def post_create_view(request):
     if request.method == "POST":
         post_form = PostForm(request.POST, request.FILES)
         media_formset = PostMediaFormSet(request.POST, request.FILES, queryset=PostMedia.objects.none())
-
         if post_form.is_valid() and media_formset.is_valid():
             post = post_form.save(commit=False)
             post.author = request.user
             post.save()
-
             for form in media_formset.cleaned_data:
                 if form:
                     image = form.get("image")
@@ -207,11 +117,8 @@ def post_create_view(request):
     return render(
         request,
         "core/post_create.html",
-        {"post_form": post_form, "media_formset": media_formset},
-    )
-from django.core.paginator import Paginator
-from django.shortcuts import render
-from .models import Post
+        {"post_form": post_form, "media_formset": media_formset}, )
+
 
 def post_list_view(request):
     query = request.GET.get("q", "")
@@ -230,9 +137,8 @@ def post_list_view(request):
         "query": query,
         "total_results": post_list.count(),
     }
-
     return render(request, "core/post_list.html", context)
-        
+   
 
 @login_required
 def post_likes_list(request, pk):
@@ -240,60 +146,51 @@ def post_likes_list(request, pk):
     users = post.likes.all()
     return render(request, 'post_likes_list.html', {'post': post, 'users': users})
 
+
 @login_required
 def like_post_view(request, pk):
     post = get_object_or_404(Post, pk=pk)
-
     if request.user in post.likes.all():
         post.likes.remove(request.user)
     else:
         post.likes.add(request.user)
 
-    return redirect("post_detail", pk=pk)
-
-
-
+    return redirect(f"{reverse('home')}#post-{pk}")  
+    
 def homepage_view(request):
     settings = SiteSettings.objects.first()
     quiz_categories = QuizCategory.objects.all()
     categories = quiz_categories[:4]
 
-    # ✅ Only published posts with valid pk
     all_posts = (
         Post.objects.filter(status="published")
-        .exclude(pk__isnull=True)
         .prefetch_related("comments")
         .order_by("-created")
     )
-
     paginator = Paginator(all_posts, 25)
     page_number = request.GET.get("page")
     posts = paginator.get_page(page_number)
 
-    # Attach top-level comments
-    for post in posts:
-        post.top_level_comments = post.comments.filter(parent__isnull=True)
+    # Build a dictionary of top-level comments keyed by post id
+    comments_map = {
+        p.pk: p.comments.filter(parent__isnull=True).order_by("-created")
+        for p in posts
+    }
 
     today = date.today()
     daily_fact = DailyFact.objects.filter(date=today).first()
 
-    # ✅ Deterministic daily quote selection
     quotes = list(DailyQuote.objects.all())
     if quotes:
-        today_str = today.isoformat()
-        hash_val = int(hashlib.sha256(today_str.encode()).hexdigest(), 16)
-        index = hash_val % len(quotes)
-        daily_quote = quotes[index]
+        hash_val = int(hashlib.sha256(today.isoformat().encode()).hexdigest(), 16)
+        daily_quote = quotes[hash_val % len(quotes)]
     else:
         daily_quote = None
 
-    # ✅ Daily Quiz selection
     daily_quiz = DailyQuiz.get_today_quiz()
-
-    all_users = User.objects.all().order_by("username")
+    all_users = User.objects.order_by("username")
     comment_form = CommentForm()
 
-    # ✅ Precompute reaction counts for template
     reaction_counts = {
         post.pk: {
             key: post.reactions.filter(reaction_type=key).count()
@@ -312,83 +209,84 @@ def homepage_view(request):
             "quiz_categories": quiz_categories,
             "daily_fact": daily_fact,
             "daily_quote": daily_quote,
-            "daily_quiz": daily_quiz,  
+            "daily_quiz": daily_quiz,
             "all_users": all_users,
             "comment_form": comment_form,
-            "reaction_counts": reaction_counts,  
+            "reaction_counts": reaction_counts,
+            "comments_map": comments_map,
         },
     )
 
 
 
-# @login_required
-# def like_post_view(request, pk):
-#     post = get_object_or_404(Post, pk=pk)
-#     user = request.user
+@login_required
+def like_post_view(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    user = request.user
 
-#     if user in post.likes.all():
-#         post.likes.remove(user)
-#         liked = False
-#     else:
-#         post.likes.add(user)
-#         liked = True
+    if user in post.likes.all():
+        post.likes.remove(user)
+        liked = False
+    else:
+        post.likes.add(user)
+        liked = True
 
-#     return JsonResponse({
-#         'liked': liked,
-#         'total_likes': post.likes.count(),
-#         'message': "Liked" if liked else "Unliked"
-#     })
+    return JsonResponse({
+        'liked': liked,
+        'total_likes': post.likes.count(),
+        'message': "Liked" if liked else "Unliked"
+    })
 
 
 
-# @login_required
-# def toggle_like_ajax(request):
-#     data = json.loads(request.body)
-#     post_id = data.get("post_id")
-#     post = Post.objects.get(pk=post_id)
-#     user = request.user
+@login_required
+def toggle_like_ajax(request):
+    data = json.loads(request.body)
+    post_id = data.get("post_id")
+    post = Post.objects.get(pk=post_id)
+    user = request.user
 
-#     if user in post.likes.all():
-#         post.likes.remove(user)
-#         liked = False
-#     else:
-#         post.likes.add(user)
-#         liked = True
+    if user in post.likes.all():
+        post.likes.remove(user)
+        liked = False
+    else:
+        post.likes.add(user)
+        liked = True
 
-#     return JsonResponse({
-#         "liked": liked,
-#         "likes_count": post.likes.count()
-#     })
+    return JsonResponse({
+        "liked": liked,
+        "likes_count": post.likes.count()
+    })
 
-# @login_required
-# def add_comment(request, pk):
-#     post = get_object_or_404(Post, id=pk)
-#     parent_id = request.POST.get("parent_id")
-#     parent_comment = get_object_or_404(Comment, id=parent_id, post=post) if parent_id else None
+@login_required
+def add_comment(request, pk):
+    post = get_object_or_404(Post, id=pk)
+    parent_id = request.POST.get("parent_id")
+    parent_comment = get_object_or_404(Comment, id=parent_id, post=post) if parent_id else None
 
-#     if request.method == "POST":
-#         form = CommentForm(request.POST)
-#         if form.is_valid():
-#             comment = form.save(commit=False)
-#             comment.post = post
-#             comment.user = request.user
-#             comment.parent = parent_comment
-#             comment.approved = True
-#             comment.save()
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.user = request.user
+            comment.parent = parent_comment
+            comment.approved = True
+            comment.save()
 
-#             if request.headers.get("x-requested-with") == "XMLHttpRequest":
-#                 html = render_to_string(
-#                     "partials/comment_item.html",
-#                     {"comment": comment, "post": post},
-#                     request=request
-#                 )
-#                 return JsonResponse({
-#                     "success": True,
-#                     "reply_html": html,
-#                     "comment_id": comment.id
-#                 })
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                html = render_to_string(
+                    "partials/comment_item.html",
+                    {"comment": comment, "post": post},
+                    request=request
+                )
+                return JsonResponse({
+                    "success": True,
+                    "reply_html": html,
+                    "comment_id": comment.id
+                })
 
-#     return redirect("post_detail", pk=pk)
+    return redirect("post_detail", pk=pk)
 @login_required
 def add_reply(request, post_id, comment_id):
     """
@@ -446,9 +344,6 @@ def load_reply_form(request, parent_id):
 
 
 
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from .models import Post
 
 @login_required
 def profile_dashboard(request):
@@ -805,11 +700,27 @@ def post_list(request):
     return render(request, "core/post_list.html", {"page_obj": page_obj})
 
 
-# def online_users_view(request):
-#     users = User.objects.all()
-#     online_users = [user for user in users if is_user_online(user)]
-#     return render(request, "online_users.html", {"online_users": online_users})
 
+@login_required
+def like_post(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    if request.user in post.likes.all():
+        post.likes.remove(request.user)
+    else:
+        post.likes.add(request.user)
+    return redirect(request.POST.get('next', 'home'))
+
+@login_required
+def add_comment_home(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            c = form.save(commit=False)
+            c.post = post
+            c.user = request.user
+            c.save()
+    return redirect(request.POST.get('next', 'home'))
 
 
 from django.shortcuts import redirect, get_object_or_404
@@ -826,7 +737,7 @@ def like_comment(request, comment_id):
 
     next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "home"
     return redirect(next_url)
-
+    
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
@@ -836,7 +747,8 @@ def post_detail(request, pk):
         post.save()
         request.session[session_key] = True
 
-    comments = Comment.objects.filter(post=post, approved=True).select_related('user', 'parent').prefetch_related('replies', 'likes')
+    comments = Comment.objects.filter(post=post, approved=True)\
+        .select_related('user', 'parent').prefetch_related('replies', 'likes')
     top_level_comments = comments.filter(parent__isnull=True).order_by('-created')
 
     if request.method == "POST":
@@ -855,7 +767,7 @@ def post_detail(request, pk):
                 except Comment.DoesNotExist:
                     pass
             new_comment.save()
-            return redirect('post_detail', pk=post.pk)
+            return redirect('home')  # <— redirect to home
     else:
         comment_form = CommentForm()
 
@@ -869,30 +781,19 @@ def post_detail(request, pk):
 
     return render(request, "post_detail.html", context)
 
-    reaction_counts = {
-        key: post.reactions.filter(reaction_type=key).count()
-        for key, _ in Reaction.REACTION_CHOICES
-    }
+def download_post_pdf(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    template_path = "core/post_pdf.html"
+    context = {"post": post}
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="post_{post_id}.pdf"'
+    template = get_template(template_path)
+    html = template.render(context)
 
-    return render(request, "post_detail.html", {
-        "post": post,
-        "reaction_counts": reaction_counts
-    })
-
-
-# def download_post_pdf(request, post_id):
-#     post = get_object_or_404(Post, pk=post_id)
-#     template_path = "core/post_pdf.html"
-#     context = {"post": post}
-#     response = HttpResponse(content_type="application/pdf")
-#     response["Content-Disposition"] = f'attachment; filename="post_{post_id}.pdf"'
-#     template = get_template(template_path)
-#     html = template.render(context)
-
-#     pisa_status = pisa.CreatePDF(html, dest=response)
-#     if pisa_status.err:
-#         return HttpResponse("We had some errors <pre>" + html + "</pre>")
-#     return response
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse("We had some errors <pre>" + html + "</pre>")
+    return response
 
 
 @login_required
@@ -1088,9 +989,6 @@ def quiz_list_view(request):
     return render(request, "quiz/quiz_list.html")
 
 
-from django.shortcuts import get_object_or_404, render
-from .models import Comment
-
 
 def load_replies(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
@@ -1155,10 +1053,6 @@ def add_reply_ajax(request, post_pk, parent_id):
 
 
 
-from django.contrib.auth.decorators import user_passes_test
-from django.db.models import Count
-from django.shortcuts import render
-from .models import QuizCategory, QuizResult
 
 @user_passes_test(lambda u: u.is_staff or u.is_superuser)
 def most_attempted_categories(request):
@@ -1170,11 +1064,7 @@ def most_attempted_categories(request):
     return render(request, 'analytics/most_attempted.html', {'category_stats': category_stats})
 
 
-from django.contrib.auth.decorators import user_passes_test
-from django.db.models import Count, Avg
-from django.shortcuts import render
-from django.contrib.auth import get_user_model
-from core.models import QuizResult
+
 
 User = get_user_model()
 
@@ -1203,16 +1093,7 @@ def homework_list(request):
         homeworks = Homework.objects.filter(assigned_to__in=user_groups).distinct().order_by('-created_at')
     return render(request, 'homework/homework_list.html', {'homeworks': homeworks})
     
-from django.forms import modelformset_factory
-from .models import HomeworkSubmissionImage
-from .forms import HomeworkSubmissionForm, HomeworkSubmissionImageForm
-from django.utils import timezone
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
-from django.forms import modelformset_factory
-from .models import Homework, HomeworkSubmission, HomeworkSubmissionImage, Notification
-from .forms import HomeworkSubmissionForm, HomeworkSubmissionImageForm
+
 
 @login_required
 def submit_homework(request, homework_id):
@@ -1339,10 +1220,7 @@ def create_homework(request):
     return render(request, 'homework/create_homework.html', {'form': form})
 
 
-# views.py
 
-from django.contrib.auth.decorators import login_required
-from .models import HomeworkSubmission
 
 @login_required
 def my_graded_homework(request):
@@ -1445,9 +1323,7 @@ def daily_quote_view(request):
 
 
 
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
+
 
 @login_required
 @require_POST
@@ -1477,11 +1353,7 @@ def react_to_post_ajax(request, post_id):
     return JsonResponse({"counts": counts})
 
 
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404
-from .models import Post, Reaction
+
 
 @require_POST
 @login_required
@@ -1612,17 +1484,11 @@ def quiz_detail(request, pk):
         'correct_users_today': correct_users_today,  
     })
 
-# views.py
-from django.http import HttpResponse
-from django.template.loader import get_template
-from django.shortcuts import get_object_or_404
-from xhtml2pdf import pisa
-from .models import Homework
+
 
 def homework_pdf(request, pk):
     homework = get_object_or_404(Homework, pk=pk)
     
-    # Build absolute URLs for images
     images_with_urls = []
     for img in homework.images.all():
         images_with_urls.append(request.build_absolute_uri(img.image.url))
@@ -1630,7 +1496,7 @@ def homework_pdf(request, pk):
     template_path = 'homework/homework_pdf.html'
     context = {
         'homework': homework,
-        'images': images_with_urls,  # Pass pre-built URLs
+        'images': images_with_urls,  
     }
     
     response = HttpResponse(content_type='application/pdf')
