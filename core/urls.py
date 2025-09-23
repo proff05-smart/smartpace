@@ -19,9 +19,15 @@ from core.views import (
 
 
 urlpatterns = [
+
+    path('comment/add/<int:post_id>/', views.add_comment, name='add_comment'),
+    path('comment/add/<int:post_id>/<int:parent_id>/', views.add_comment, name='add_comment'),
+    path('comment/add/<int:post_id>/', views.add_comment, name='add_comment'),
+    # Reply to comment
+    path('comment/add/<int:post_id>/<int:parent_id>/', views.add_comment, name='add_comment'),
     # Home
     path('', views.homepage_view, name='home'),
-
+    path('add-comment/<int:post_id>/', views.add_comment, name='add_comment'),
     # Authentication
     path('register/', views.register_view, name='register'),
     path('login/', LoginView.as_view(template_name='login.html'), name='login'),
@@ -33,6 +39,9 @@ urlpatterns = [
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     #path('edit-profile/', views.edit_profile, name='edit_profile'),
 
+    path('add-comment/<int:post_id>/', views.add_comment, name='add_comment'),
+    path('add-comment/<int:post_id>/<int:parent_id>/', views.add_comment, name='add_comment_reply'),
+
     path('profile/delete/', views.delete_account, name='delete_account'),
     path('profile/<str:username>/', views.user_profile, name='user_profile'),
     path('profile/<int:user_id>/', views.user_profile, name='user_profile_by_id'),
@@ -41,8 +50,8 @@ urlpatterns = [
 
     
     path('', views.homepage_view, name='home'),
-    path('like/<int:pk>/', views.like_post, name='like_post'),
-    path('comment/<int:pk>/', views.add_comment_home, name='add_comment_home'),
+    #path('like/<int:pk>/', views.like_post, name='like_post'),
+    #path('comment/<int:pk>/', views.add_comment_home, name='add_comment_home'),
 
     # urls.py
     path("post/toggle-like/", views.toggle_like_ajax, name="toggle_like_ajax"),
@@ -51,7 +60,7 @@ urlpatterns = [
 
     # Blog Posts
     path('blog/', views.post_list, name='blog'),
-    path('posts/', views.post_list_view, name='post_list'),
+    #path('posts/', views.post_list_view, name='post_list'),
     path('add-post/', views.add_post, name='add_post'),
     path('post/new/', views.post_create_view, name='post_create'),
     path('post/<int:pk>/', views.post_detail, name='post_detail'),
@@ -62,15 +71,15 @@ urlpatterns = [
 
 
     # Comments & Replies
-    path('comment/<int:comment_id>/reply/', views.add_reply, name='add_reply'),
-    path('post/<int:post_id>/comment/<int:parent_id>/reply/', views.reply_to_comment, name='reply_to_comment'),
+    #path('comment/<int:comment_id>/reply/', views.add_reply, name='add_reply'),
+    #path('post/<int:post_id>/comment/<int:parent_id>/reply/', views.reply_to_comment, name='reply_to_comment'),
     path('comment/<int:comment_id>/edit/', views.edit_comment, name='edit_comment'),
     path('comment/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
     path('comment/<int:comment_id>/like/', views.like_comment, name='like_comment'),
     path('comment/<int:comment_id>/replies/', views.load_replies, name='load_replies'),
     path('comment/<int:parent_id>/reply-form/', views.load_reply_form, name='load_reply_form'),
     path('like-reply/', views.like_reply, name='like_reply'),
-    path('post/<int:post_pk>/comment/<int:parent_id>/reply/ajax/', views.add_reply_ajax, name='add_reply_ajax'),
+    #path('post/<int:post_pk>/comment/<int:parent_id>/reply/ajax/', views.add_reply_ajax, name='add_reply_ajax'),
 
     # Quizzes
     path('quiz/', views.quiz_category_list, name='quiz_category_list'),
@@ -125,7 +134,7 @@ urlpatterns = [
     path('homework/<int:pk>/edit/', views.edit_homework, name='edit_homework'),
     path('homework/<int:pk>/view/', views.view_homework, name='view_homework'),
     path('daily-quote/', views.daily_quote_view, name='daily_quote'),
-    path('post/<int:post_id>/react-ajax/', views.react_to_post_ajax, name='react_to_post_ajax'),
+    #path('post/<int:post_id>/react-ajax/', views.react_to_post_ajax, name='react_to_post_ajax'),
     path('react/<int:post_id>/', views.react_view, name='react'),
     path('quiz/<int:pk>/', views.quiz_detail, name='quiz_detail'),
     path('homework/<int:pk>/pdf/', views.homework_pdf, name='homework_pdf'),

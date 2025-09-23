@@ -48,7 +48,7 @@
 
         <!-- Reply Form -->
         <div class="collapse mt-2" id="replyForm{{ comment.id }}">
-          <form method="POST" action="{% url 'reply_to_comment' post.pk comment.id %}">
+          <form method="POST" action="{% url 'add_comment' post.pk comment.id %}">
             {% csrf_token %}
             <textarea name="body" rows="2" class="form-control form-control-sm mb-2"
                       placeholder="Write your reply..." required></textarea>
