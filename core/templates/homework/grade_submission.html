@@ -1,42 +1,58 @@
 {% extends 'base.html' %}
 {% block content %}
 
-{{ form.media }}  <!-- Necessary for CKEditor5 to load -->
+{{ form.media }}  {# Necessary for CKEditor5 to load #}
 
 <div class="container mt-4">
   <h3 class="h5 h3-md mb-3 text-center text-md-start">
-    Grade Submission - {{ submission.student.username }}
+    Grade Submission – {{ submission.student.username }}
   </h3>
 
   <div class="mb-2">
-    <p class="mb-1"><strong>Homework:</strong> {{ submission.homework.title }}</p>
-    <p class="mb-1"><strong>Submitted At:</strong> {{ submission.submitted_at }}</p>
+    <p class="mb-1">
+      <strong>Homework:</strong> {{ submission.homework.title }}
+    </p>
+    <p class="mb-1">
+      <strong>Submitted At:</strong>
+      <time datetime="{{ submission.submitted_at|date:'c' }}">
+        {{ submission.submitted_at }}
+      </time>
+    </p>
   </div>
 
   <div class="container mt-4 mb-4">
     <div class="bg-light p-4 rounded shadow-sm">
-      <h2 class="mb-2">{{ homework.title }}</h2>
-      <p><strong>Subject:</strong> {{ homework.subject }}</p>
-      <p><strong>Grade:</strong> {{ homework.grade }}</p>
-      <p><strong>Due Date:</strong> {{ homework.due_date }}</p>
+      <h2 class="mb-2">{{ submission.homework.title }}</h2>
+      <p><strong>Subject:</strong> {{ submission.homework.subject }}</p>
+      <p><strong>Grade:</strong> {{ submission.homework.grade }}</p>
+      <p>
+        <strong>Due Date:</strong>
+        <time datetime="{{ submission.homework.due_date|date:'c' }}">
+          {{ submission.homework.due_date }}
+        </time>
+      </p>
 
       <div class="mt-3">
         <strong>Instructions:</strong>
         <div class="border rounded p-3 mt-2 bg-white">
-          {{ homework.instructions|safe }}
+          {{ submission.homework.instructions|safe }}
         </div>
       </div>
 
-      {% if homework.attachment %}
+      {% if submission.homework.attachment %}
         <p class="mt-3">
-          <strong>Attachment:</strong> <a href="{{ homework.attachment.url }}" target="_blank">📎 Download</a>
+          <strong>Attachment:</strong>
+          <a href="{{ submission.homework.attachment.url }}" target="_blank">📎 Download</a>
         </p>
       {% endif %}
 
-      {% if homework.image %}
+      {% if submission.homework.image %}
         <div class="mt-3">
           <strong>Image:</strong><br>
-          <img src="{{ homework.image.url }}" alt="Homework Image" class="img-fluid rounded" style="max-height: 300px;">
+          <img src="{{ submission.homework.image.url }}"
+               alt="Homework image for {{ submission.homework.title }}"
+               class="img-fluid rounded"
+               style="max-height: 300px;">
         </div>
       {% endif %}
     </div>
@@ -44,13 +60,14 @@
 
   <div class="mb-3">
     <h5 class="h6">Answer:</h5>
-    <div class="border p-3 rounded bg-light" style="max-height: 300px; overflow-y: auto;">
+    <div class="border p-3 rounded bg-light overflow-auto" style="max-height: 300px;">
       {{ submission.answer_text|safe }}
     </div>
 
     {% if submission.submitted_file %}
       <p class="mt-2">
-        <a href="{{ submission.submitted_file.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+        <a href="{{ submission.submitted_file.url }}" target="_blank"
+           class="btn btn-sm btn-outline-secondary">
           📎 Download Submitted File
         </a>
       </p>
@@ -62,7 +79,9 @@
     <div class="mb-3">
       {{ form.as_p }}
     </div>
-    <button type="submit" class="btn btn-primary w-100 w-md-auto">Submit Grade</button>
+    <button type="submit" class="btn btn-primary mt-3 mt-md-0 w-100 w-md-auto">
+      Submit Grade
+    </button>
   </form>
 </div>
 {% endblock %}
