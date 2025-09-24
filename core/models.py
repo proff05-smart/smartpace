@@ -416,8 +416,70 @@ class HomeworkSubmission(models.Model):
     )
     student = models.ForeignKey(User, on_delete=models.CASCADE)
     grade = models.CharField(
-        max_length=20, choices=GRADE_CHOICES, default="Grade 8", blank=True, null=True
+        max_length=20, choices=GRADE_CHOICES, blank=True, null=True
     )
+class HomeworkImage(models.Model):
+    homework = models.ForeignKey(
+        Homework,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+    image = CloudinaryField('image')  
+
+    def __str__(self):
+        return f"Image for {self.homework.title}"
+
+        
+from django.contrib.auth import get_user_model
+from cloudinary.models import CloudinaryField
+
+User = get_user_model()
+
+
+GRADE_CHOICES = [
+    ('Grade 1', 'Grade 1'),
+    ('Grade 2', 'Grade 2'),
+    ('Grade 3', 'Grade 3'),
+    ('Grade 4', 'Grade 4'),
+    ('Grade 5', 'Grade 5'),
+    ('Grade 6', 'Grade 6'),
+    ('Grade 7', 'Grade 7'),
+    ('Grade 8', 'Grade 8'),
+    ('Grade 9', 'Grade 9'),
+    ('Grade 10', 'Grade 10'),
+    ('Grade 11', 'Grade 11'),
+    ('Grade 12', 'Grade 12'),
+]
+
+class HomeworkSubmission(models.Model):
+    homework = models.ForeignKey(
+        'Homework', on_delete=models.CASCADE, related_name='submissions'
+    )
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    grade = models.CharField(
+        max_length=20, choices=GRADE_CHOICES, blank=True, null=True
+    )
+    
+    submitted_file = CloudinaryField(
+        resource_type='raw',  
+        folder='homework_submissions',
+        blank=True,
+        null=True
+    )
+
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    answer_text = CKEditor5Field('Your Answer', blank=True, null=True)
+    feedback = CKEditor5Field('Feedback', blank=True, null=True)
+    is_graded = models.BooleanField(default=False)
+    mark_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True,
+        help_text="Enter the mark as a percentage (e.g., 87.50)"
+    )
+
+    def __str__(self):
+        student_name = self.student.username if self.student else "Unknown Student"
+        homework_title = self.homework.title if self.homework else "Unknown Homework"
+        return f"{student_name}'s submission for {homework_title}"
     
     submitted_file = CloudinaryField(
         resource_type='raw',  

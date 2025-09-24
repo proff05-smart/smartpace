@@ -1,46 +1,66 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <h2>My Graded Homework</h2>
+<div class="container py-5 bg-dark text-light">
+  <h2 class="mb-4 text-center display-6 fw-bold text-info">My Graded Homework</h2>
+
   {% if submissions %}
-    <div class="table-responsive">
-      <table class="table table-striped table-hover align-middle">
-        <thead class="table-light">
-          <tr>
-            <th>Homework</th>
-            <th>Grade</th>
-            <th>Mark (%)</th>  
-            <th>Feedback</th>
-            <th>Submitted</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for sub in submissions %}
-          <tr>
-            <td>{{ sub.homework.title }}</td>
-            <td>{{ sub.grade }}</td>
-            <td>
+    <div class="row g-4">
+      {% for sub in submissions %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card bg-gradient-dark border border-info shadow-lg h-100">
+          <div class="card-body">
+            <h5 class="card-title text-info">
+              {{ sub.homework.title }}
+            </h5>
+
+            <!-- Learner’s own details -->
+            <p class="mb-2">
+              <strong>Class:</strong> {{ sub.student.class_name }}
+            </p>
+            {% if sub.student.grade_level %}
+            <p class="mb-2">
+              <strong>Learner Grade:</strong> {{ sub.student.grade_level }}
+            </p>
+            {% endif %}
+
+            <!-- Grade assigned to the homework itself -->
+            {% if sub.homework.grade %}
+            <p class="mb-2">
+              <strong>Homework Grade:</strong> {{ sub.homework.grade }}
+            </p>
+            {% endif %}
+
+            <p class="mb-2">
+              <strong>Mark:</strong>
               {% if sub.mark_percentage %}
-                <span class="{% if sub.mark_percentage >= 75 %}text-success{% elif sub.mark_percentage >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                <span class="{% if sub.mark_percentage >= 75 %}text-success
+                               {% elif sub.mark_percentage >= 50 %}text-warning
+                               {% else %}text-danger{% endif %} fw-bold">
                   {{ sub.mark_percentage }}%
                 </span>
               {% else %}
-                —
+                <span class="text-muted">—</span>
               {% endif %}
-            </td>
-            <td>
-              <span title="{{ sub.feedback }}">
-                {{ sub.feedback|truncatechars:50|default:"—" }}
+            </p>
+
+            <p class="mb-2">
+              <strong>Feedback:</strong>
+              <span data-bs-toggle="tooltip" data-bs-placement="top"
+                    title="{{ sub.feedback|striptags }}">
+                {{ sub.feedback|safe }}
               </span>
-            </td>
-            <td>{{ sub.submitted_at|date:"M d, Y H:i" }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            </p>
+
+          </div>
+          <div class="card-footer border-top border-info small text-end text-secondary">
+            Submitted: {{ sub.submitted_at|date:"M d, Y H:i" }}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
     </div>
   {% else %}
-    <p>You have no graded homework yet.</p>
+    <p class="lead text-center mt-5">You have no graded homework yet.</p>
   {% endif %}
 </div>
 {% endblock %}
