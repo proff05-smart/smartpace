@@ -742,6 +742,7 @@ def user_profile(request, username):
             "quiz_attempts": quiz_attempts,
         },
     )
+    
 @login_required
 def add_comment(request, post_id, parent_id=None):
     post = get_object_or_404(Post, pk=post_id)
@@ -800,17 +801,23 @@ def add_comment(request, post_id, parent_id=None):
                     tone="info"
                 )
 
+            # AJAX response
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
                 html = render_to_string("partials/comment_item.html", {"comment": comment, "post": post}, request=request)
                 return JsonResponse({"success": True, "html": html, "comment_id": comment.id})
 
-            next_url = request.POST.get("next")
-            return redirect(next_url or f"{reverse('post_detail', kwargs={'pk': post.id})}#comment-{comment.id}")
+            # Stay on same page after posting
+            next_url = request.POST.get("next") or request.META.get("HTTP_REFERER", "/")
+            return redirect(f"{next_url}#comment-{comment.id}")
 
+        # AJAX form errors
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({"success": False, "errors": form.errors}, status=400)
+
         messages.error(request, "There was an error posting your comment.")
-        return redirect("home")
+        next_url = request.POST.get("next") or request.META.get("HTTP_REFERER", "/")
+        return redirect(next_url)
+
 
 
 
