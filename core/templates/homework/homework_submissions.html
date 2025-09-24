@@ -1,11 +1,19 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-4">
-  <h2 class="mb-4">My Homework Submissions</h2>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">My Homework Submissions</h2>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Submissions</li>
+      </ol>
+    </nav>
+  </div>
 
   <div class="list-group">
     {% for sub in submissions %}
-      <div class="list-group-item list-group-item-action flex-column align-items-start mb-2">
+      <div class="list-group-item list-group-item-action flex-column align-items-start mb-3 shadow-sm rounded">
         <div class="d-flex w-100 justify-content-between">
           <h5 class="mb-1">{{ sub.homework.title }}</h5>
           <small class="text-muted">{{ sub.submitted_at|date:"M d, Y" }}</small>
@@ -13,11 +21,14 @@
 
         {% if sub.graded %}
           <p class="mb-1">
-            <strong>Grade:</strong> {{ sub.grade }}
+            <strong>Grade:</strong>
+            <span class="badge bg-success">{{ sub.grade }}</span>
           </p>
           <p class="mb-0">
             <strong>Feedback:</strong>
-            <span title="{{ sub.feedback }}">{{ sub.feedback|truncatechars:100 }}</span>
+            <span data-bs-toggle="tooltip" title="{{ sub.feedback }}">
+              {{ sub.feedback|truncatechars:100 }}
+            </span>
           </p>
         {% else %}
           <p class="text-muted mb-0"><em>Not graded yet</em></p>
@@ -30,4 +41,12 @@
     {% endfor %}
   </div>
 </div>
+
+<script>
+  // Enable Bootstrap tooltips
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+</script>
 {% endblock %}

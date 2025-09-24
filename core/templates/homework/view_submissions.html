@@ -1,22 +1,13 @@
-<div class="container mt-4">
-  <div class="row">
-    {% for submission in submissions %}
-      <div class="col-12 col-md-6 col-lg-4 mb-4">
-        <div class="card shadow-sm h-100">
-          <div class="card-body d-flex flex-column">
-            <h5 class="card-title">{{ submission.student.get_full_name }}</h5>
+{% extends "base.html" %}
+{% block content %}
 
-            <p class="card-subtitle text-muted mb-2">
-              <strong>Submitted At:</strong> {{ submission.submitted_at }}
-            </p>
-
-
+<!-- ===== Homework Details ===== -->
 <div class="container mt-4 mb-4">
   <div class="bg-light p-4 rounded shadow-sm">
     <h2 class="mb-2">{{ homework.title }}</h2>
     <p><strong>Subject:</strong> {{ homework.subject }}</p>
     <p><strong>Grade:</strong> {{ homework.grade }}</p>
-    <p><strong>Due Date:</strong> {{ homework.due_date }}</p>
+    <p><strong>Due Date:</strong> {{ homework.due_date|date:"M d, Y" }}</p>
 
     <div class="mt-3">
       <strong>Instructions:</strong>
@@ -27,38 +18,59 @@
 
     {% if homework.attachment %}
       <p class="mt-3">
-        <strong>Attachment:</strong> <a href="{{ homework.attachment.url }}" target="_blank">📎 Download</a>
+        <strong>Attachment:</strong>
+        <a href="{{ homework.attachment.url }}" target="_blank">📎 Download</a>
       </p>
     {% endif %}
 
     {% if homework.image %}
       <div class="mt-3">
         <strong>Image:</strong><br>
-        <img src="{{ homework.image.url }}" alt="Homework Image" class="img-fluid rounded" style="max-height: 300px;">
+        <img src="{{ homework.image.url }}"
+             alt="{{ homework.title }} image"
+             class="img-fluid rounded"
+             style="max-height: 300px;">
       </div>
     {% endif %}
   </div>
 </div>
 
+<!-- ===== Submissions List ===== -->
+<div class="container mt-4">
+  <div class="row">
+    {% for submission in submissions %}
+      <div class="col-12 col-md-6 col-lg-4 mb-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-body d-flex flex-column">
 
+            <!-- Full name if available, else username -->
+            <h3 class="card-title">
+              {% if submission.student.get_full_name %}
+                {{ submission.student.get_full_name }}
+              {% else %}
+                {{ submission.student.username }}
+              {% endif %}
+            </h3>
 
+            <p class="text-muted mb-2">
+              <strong>Submitted:</strong> {{ submission.submitted_at|date:"M d, Y H:i" }}
+            </p>
 
-           <div class="mb-2" style="overflow-x: auto;">
-  <strong>Answers:</strong><br>
-  <ul class="list-unstyled">
-    {% for answer in submission.answers.all %}
-      <li class="mb-2">
-        <strong>Q:</strong> {{ answer.question.text }}<br>
-        <strong>A:</strong> {{ answer.response }}
-      </li>
-    {% empty %}
-      <li>No answers provided.</li>
-    {% endfor %}
-  </ul>
-</div>
+            <div class="mb-2 overflow-auto">
+              <strong>Answers:</strong>
+              <ul class="list-unstyled">
+                {% for answer in submission.answers.all %}
+                  <li class="mb-2">
+                    <strong>Q:</strong> {{ answer.question.text }}<br>
+                    <strong>A:</strong> <span class="text-break">{{ answer.response }}</span>
+                  </li>
+                {% empty %}
+                  <li>No answers provided.</li>
+                {% endfor %}
+              </ul>
+            </div>
 
-
-            <p class="mb-2">
+            <p>
               <strong>File:</strong>
               {% if submission.submitted_file %}
                 <a href="{{ submission.submitted_file.url }}" target="_blank">📎 Download</a>
@@ -67,19 +79,24 @@
               {% endif %}
             </p>
 
-            <p class="mb-2">
+            <p>
               <strong>Mark:</strong>
-              {{ submission.mark_percentage|default:"Not graded" }}%
+              {% if submission.mark_percentage %}
+                {{ submission.mark_percentage }}%
+              {% else %}
+                Not graded
+              {% endif %}
             </p>
 
-            <p class="mb-2">
+            <p>
               <strong>Feedback:</strong><br>
-              {{ submission.feedback|default:"No feedback yet" }}
+              {{ submission.feedback|default:"No feedback yet"|safe }}
             </p>
 
             {% if request.user.is_staff %}
-              <a href="{% url 'grade_submission' submission.id %}" class="btn btn-sm btn-outline-success mt-auto">
-                📝 Grade Submission
+              <a href="{% url 'grade_submission' submission.id %}"
+                 class="btn btn-sm btn-outline-success mt-auto">
+                 📝 Grade Submission
               </a>
             {% endif %}
           </div>
@@ -92,3 +109,5 @@
     {% endfor %}
   </div>
 </div>
+
+{% endblock %}
