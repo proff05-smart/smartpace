@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static youtube_tags humanize widget_tweaks custom_filters custom_tags dict_extras %}
-
+{% load humanize %}
 {% block content %}
 
 <div class="container-fluid px-2 px-sm-4 my-4">
@@ -146,123 +146,136 @@
     </section>
   {% endif %}
 
-  <!-- Posts -->
-   <div class="container-fluid p-0">
+<!-- Single Post -->
+<div class="container-fluid p-0">
 
-    {% if posts %}
-      {% for post in posts %}
-        <div class="mb-0 border-bottom p-0">
-          <!-- Media -->
-          {% if post.video %}
-            <video class="w-100 d-block" controls>
-              <source src="{{ post.video.url }}" type="video/mp4">
-            </video>
-          {% elif post.youtube_url|is_youtube_link %}
-            <div class="ratio ratio-16x9 m-0">
-              <iframe src="{{ post.youtube_url|youtube_embed }}" class="w-100 h-100 border-0" allowfullscreen></iframe>
-            </div>
-          {% elif post.image or post.get_first_image_url %}
-            <img src="{% if post.image %}{{ post.image.url }}{% else %}{{ post.get_first_image_url }}{% endif %}"
-                 alt="{{ post.title|escape }}" class="w-100 d-block">
-          {% endif %}
+    {% for post in posts %}
+        <div class="mb-4 border-bottom p-3">
 
-          <!-- Post Info -->
-          <div style="padding:16px;">
-            <h4 class="fw-bold mb-2">{{ post.title }}</h4>
-            <div class="text-muted small mb-2 d-flex flex-wrap align-items-center gap-1">
-              <a href="{% url 'user_profile' post.author.username %}" class="d-flex align-items-center text-reset text-decoration-none">
-                <img src="{% if post.author.profile.photo %}{{ post.author.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}" class="rounded-circle me-1" width="24" height="24">
-                {{ post.author.username }}
-              </a>
-              • {{ post.created_at|date:"M j, Y" }}
-              {% if post.updated_at > post.created_at %} • Updated {{ post.updated_at|naturaltime }}{% endif %}
-              • {{ post.category.name }}
-            </div>
+    <!-- 1️⃣ User Photo & Username -->
+<div class="d-flex align-items-center mb-2">
+    <a href="{% url 'user_profile' post.author.username %}" class="d-flex align-items-center text-reset text-decoration-none">
+        <img src="{% if post.author.profile.photo %}{{ post.author.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
+             class="rounded-circle me-2" width="40" height="40" alt="{{ post.author.username }}">
+        <strong>{{ post.author.username }}</strong>
+    </a>
+</div>
 
-            <p class="mb-3">{{ post.excerpt|default:post.content|safe }}</p>
+<!-- 2️⃣ Post Title (NOW above media) -->
+<h4 class="fw-bold mb-2">{{ post.title }}</h4>
 
+           <!-- 5️⃣ Content -->
+            <!-- <h4 class="fw-bold mb-2">{{ post.title }}</h4> -->
+           <p class="mb-2 text-muted small">
+    • {{ post.created|date:"M j, Y" }}
+    {% if post.updated > post.created %}
+        • Updated {{ post.updated|naturaltime }}
+    {% endif %}
+    • {{ post.category.name }}
+</p>
+
+<!-- 3️⃣ Media (Image, Video, YouTube) -->
+{% if post.image or post.get_first_image_url %}
+  <img src="{% if post.image %}{{ post.image.url }}{% else %}{{ post.get_first_image_url }}{% endif %}"
+       alt="{{ post.title|escape }}" class="w-100 d-block mb-3">
+{% endif %}
+
+{% if post.video %}
+  <video class="w-100 d-block mb-3" controls>
+    <source src="{{ post.video.url }}" type="video/mp4">
+  </video>
+{% endif %}
+
+{% if post.youtube_url|is_youtube_link %}
+  <div class="ratio ratio-16x9 mb-3">
+    <iframe src="{{ post.youtube_url|youtube_embed }}"
+            class="w-100 h-100 border-0"
+            allowfullscreen></iframe>
+  </div>
+{% endif %}
+
+
+ 
+<p class="mb-3">{{ post.excerpt|default:post.content|safe }}</p>
             {% if user == post.author %}
-              <div class="mb-3">
-                <a href="{% url 'edit_post' post.pk %}" class="text-warning me-3">✏️ Edit</a>
-                <a href="{% url 'delete_post' post.pk %}" class="text-danger" onclick="return confirm('Delete this post?')">🗑️ Delete</a>
-              </div>
+                <div class="mb-2">
+                    <a href="{% url 'edit_post' post.pk %}" class="text-warning me-3">✏️ Edit</a>
+                    <a href="{% url 'delete_post' post.pk %}" class="text-danger"
+                       onclick="return confirm('Delete this post?')">🗑️ Delete</a>
+                </div>
             {% endif %}
 
-                        <!-- Likes -->
+            <!-- Likes -->
             <a href="#"
-              class="like-btn text-decoration-none"
-              data-post-id="{{ post.id }}">
-              <span class="like-icon">
-                  {% if user in post.likes.all %}❤️{% else %}🤍{% endif %}
-              </span>
-              <span class="like-count ms-1">{{ post.likes.count }}</span>
+               class="like-btn text-decoration-none"
+               data-post-id="{{ post.id }}">
+                <span class="like-icon">
+                    {% if user in post.likes.all %}❤️{% else %}🤍{% endif %}
+                </span>
+                <span class="like-count ms-1">{{ post.likes.count }}</span>
             </a>
 
-
-          <!-- Reactions -->
-          <div class="reactions d-inline ms-2" data-post-id="{{ post.id }}">
-            {% if post.reactions and post.reactions.model.REACTION_CHOICES %}
-              {% for key, emoji in post.reactions.model.REACTION_CHOICES %}
-                <button type="button" class="btn btn-sm btn-light reaction-btn" data-reaction="{{ key }}">
-                  {{ emoji }}
-                  <span class="count">
-                    {% if reaction_counts|dict_get:post.id %}
-                      {{ reaction_counts|dict_get:post.id|dict_get:key|default:0 }}
-                    {% else %}
-                      0
-                    {% endif %}
-                  </span>
-                </button>
-              {% endfor %}
-            {% else %}
-              <p class="text-muted d-inline">No reactions yet.</p>
-            {% endif %}
-          </div>
-
+            <!-- Reactions -->
+            <div class="reactions d-inline ms-2" data-post-id="{{ post.id }}">
+                {% if post.reactions and post.reactions.model.REACTION_CHOICES %}
+                    {% for key, emoji in post.reactions.model.REACTION_CHOICES %}
+                        <button type="button" class="btn btn-sm btn-light reaction-btn" data-reaction="{{ key }}">
+                            {{ emoji }}
+                            <span class="count">
+                                {% if reaction_counts|dict_get:post.id %}
+                                    {{ reaction_counts|dict_get:post.id|dict_get:key|default:0 }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </span>
+                        </button>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted d-inline">No reactions yet.</p>
+                {% endif %}
+            </div>
 
             <a href="{% url 'post_likes_list' post.pk %}" class="btn btn-link btn-sm ms-2">See who liked</a>
 
             <!-- Comment Form -->
-                      
-                          <h5 class="card-title">💬 Add a Comment</h5>
-          <form method="POST" action="{% url 'add_comment' post_id=post.pk %}">
-            {% csrf_token %}
-            <div class="mb-3">
-              {{ comment_form.body|add_class:"form-control" }}
-            </div>
-            <button type="submit" class="btn btn-sm btn-primary">Post Comment</button>
-          </form>
-
+            <h5 class="card-title mt-3">💬 Add a Comment</h5>
+            <form method="POST" action="{% url 'add_comment' post_id=post.pk %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ comment_form.body|add_class:"form-control" }}
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">Post Comment</button>
+            </form>
 
             <!-- Comments Section -->
             {% with top_level_comments=comments_map|dict_get:post.pk %}
-              <a class="btn btn-sm btn-outline-primary mb-2"
-                data-bs-toggle="collapse"
-                href="#comments-{{ post.pk }}"
-                role="button"
-                aria-expanded="false"
-                aria-controls="comments-{{ post.pk }}">
-                Show Comments
-              </a>
+                <a class="btn btn-sm btn-outline-primary mb-2"
+                   data-bs-toggle="collapse"
+                   href="#comments-{{ post.pk }}"
+                   role="button"
+                   aria-expanded="false"
+                   aria-controls="comments-{{ post.pk }}">
+                    Show Comments
+                </a>
 
-              <div class="collapse" id="comments-{{ post.pk }}">
-                {% if top_level_comments %}
-                  <h5 class="mb-3">{{ top_level_comments.count }} Comment{{ top_level_comments.count|pluralize }}</h5>
-                  {% include "comment_tree.html" with comments=top_level_comments depth=0 %}
-                {% else %}
-                  <p class="text-muted">No comments yet.</p>
-                {% endif %}
-              </div>
+                <div class="collapse" id="comments-{{ post.pk }}">
+                    {% if top_level_comments %}
+                        <h5 class="mb-3">{{ top_level_comments.count }} Comment{{ top_level_comments.count|pluralize }}</h5>
+                        {% include "comment_tree.html" with comments=top_level_comments depth=0 %}
+                    {% else %}
+                        <p class="text-muted">No comments yet.</p>
+                    {% endif %}
+                </div>
             {% endwith %}
 
-          </div>
         </div>
-      {% endfor %}
-    {% else %}
-      <p class="text-center text-muted">No posts available.</p>
-    {% endif %}
-  </div>
+    {% empty %}
+        <p class="text-center text-muted">No posts available.</p>
+    {% endfor %}
+
 </div>
+
+
 
 <!-- JS & Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
