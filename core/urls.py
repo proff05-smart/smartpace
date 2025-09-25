@@ -20,6 +20,9 @@ from core.views import (
 
 urlpatterns = [
 
+    path("toggle-reaction/", views.toggle_reaction, name="toggle_reaction"),
+
+
     path('comment/add/<int:post_id>/', views.add_comment, name='add_comment'),
     path('comment/add/<int:post_id>/<int:parent_id>/', views.add_comment, name='add_comment'),
     path('comment/add/<int:post_id>/', views.add_comment, name='add_comment'),

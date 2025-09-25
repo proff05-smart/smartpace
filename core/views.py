@@ -138,8 +138,6 @@ def post_likes_list(request, pk):
     users = post.likes.all()
     return render(request, 'post_likes_list.html', {'post': post, 'users': users})
 
-
-    
 def homepage_view(request):
     settings = SiteSettings.objects.first()
     quiz_categories = QuizCategory.objects.all()
@@ -147,14 +145,13 @@ def homepage_view(request):
 
     all_posts = (
         Post.objects.filter(status="published")
-        .prefetch_related("comments")
+        .prefetch_related("comments", "reactions")
         .order_by("-created")
     )
     paginator = Paginator(all_posts, 25)
     page_number = request.GET.get("page")
     posts = paginator.get_page(page_number)
 
-    # Build a dictionary of top-level comments keyed by post id
     comments_map = {
         p.pk: p.comments.filter(parent__isnull=True).order_by("-created")
         for p in posts
@@ -174,9 +171,10 @@ def homepage_view(request):
     all_users = User.objects.order_by("username")
     comment_form = CommentForm()
 
+    
     reaction_counts = {
         post.pk: {
-            key: post.reactions.filter(reaction_type=key).count()
+            key: post.reactions.filter(reaction_type=key).count()  
             for key, _ in Reaction.REACTION_CHOICES
         }
         for post in posts
@@ -199,7 +197,6 @@ def homepage_view(request):
             "comments_map": comments_map,
         },
     )
-
 
 
 @login_required
@@ -1399,3 +1396,34 @@ def mark_notification_as_read(request, notification_id):
 def mark_all_notifications_as_read(request):
     Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
     return redirect("unread_notifications")
+@login_required
+@require_POST
+def toggle_reaction(request):
+    data = json.loads(request.body.decode("utf-8"))
+    post_id = data.get("post_id")
+    reaction_type = data.get("reaction")
+
+    post = get_object_or_404(Post, pk=post_id)
+
+    if reaction_type not in dict(Reaction.REACTION_CHOICES):
+        return JsonResponse({"error": "Invalid reaction type"}, status=400)
+
+    # Safely create or update reaction
+    reaction, created = Reaction.objects.update_or_create(
+        post=post,
+        user=request.user,
+        defaults={"reaction_type": reaction_type},
+    )
+
+    # If user clicked same reaction again, remove it
+    if not created and reaction.reaction_type == reaction_type:
+        reaction.delete()
+
+    # Return updated counts
+    counts = {
+        key: Reaction.objects.filter(post=post, reaction_type=key).count()
+        for key, _ in Reaction.REACTION_CHOICES
+    }
+
+    return JsonResponse({"counts": counts})
+

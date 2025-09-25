@@ -23,6 +23,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.timezone import now
 from cloudinary.models import CloudinaryField
+from django.utils import timezone
+from django.db import models
 
 
 
@@ -532,8 +534,6 @@ class Reaction(models.Model):
     def __str__(self):
         return f"{self.user} - {self.reaction_type} on {self.post}"
 
-from django.utils import timezone
-from django.db import models
 
 class DailyQuiz(models.Model):
     title = models.CharField(max_length=255, null=True, blank=True)
