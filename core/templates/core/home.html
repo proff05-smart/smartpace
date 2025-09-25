@@ -264,7 +264,11 @@
         {% else %}
             <p class="text-muted">No comments yet.</p>
         {% endif %}
+        <!-- <img src="{{ comment.user.profile.photo.url|default:'https://via.placeholder.com/30' }}"
+     class="rounded-circle me-2" width="30" height="30" alt="User"> -->
     </div>
+    
+
 {% endwith %}
 
 </div>
@@ -359,6 +363,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+});
+</script>
+
+<script>
+document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(btn => {
+  btn.addEventListener('click', function () {
+    const target = document.querySelector(this.dataset.bsTarget || this.getAttribute('href'));
+    this.textContent = target.classList.contains('show') ? 'Show Comments' : 'Hide Comments';
+  });
 });
 </script>
 
@@ -562,6 +575,20 @@ body {
     white-space: nowrap; 
     text-align: left;
 }
+
+
+
+
+
+.comment img.rounded-circle,
+.comment-tree img.rounded-circle,
+.comments-section img.rounded-circle {
+    width: 30px !important;
+    height: 30px !important;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
 
 </style>
 {% endfor %}
