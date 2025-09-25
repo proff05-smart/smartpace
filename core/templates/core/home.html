@@ -41,10 +41,10 @@
                 <i class="fab fa-tiktok" style="font-size: 24px;padding: 5px; color: #060557;"></i>
             </a>
             
-            <a href="https://www.whatsapp.com/+254701822481">
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-                <i class="fab fa-whatsapp" style="font-size: 25px; padding: 5px; color: #05ff0e;"></i>
-            </a>
+           <a href="https://wa.me/254701822481" target="_blank" rel="noopener noreferrer">
+              <i class="fab fa-whatsapp" style="font-size: 25px; padding: 5px; color: #05ff0e;"></i>
+          </a>
+
     </div>
   </div>
 </section>
@@ -496,7 +496,7 @@ body.dark-mode section.social-bar {
 html, body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden;        /* prevent horizontal scroll */
+  
 }
 
 /* remove padding from the post wrapper */
@@ -547,12 +547,9 @@ html, body {
     height: auto !important;
     margin: 0;
 }
-body {
-  overflow-x: hidden;
-}
 
 .post-content table {
-    display: block;     
+       
     width: 100%;         
     overflow-x: auto;   
     -webkit-overflow-scrolling: touch; 
@@ -590,6 +587,39 @@ body {
 }
 
 
+
 </style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".reaction-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+            const container = this.closest(".reactions");
+            const postId = container.dataset.postId;
+            const reaction = this.dataset.reaction;
+
+            fetch("{% url 'toggle_reaction' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ post_id: postId, reaction: reaction }),
+            })
+            .then(res => res.json())
+            .then(data => {
+                // Update all counts in this post’s reaction group
+                for (const [key, value] of Object.entries(data.counts)) {
+                    const span = container.querySelector(
+                        `.reaction-btn[data-reaction="${key}"] .count`
+                    );
+                    if (span) span.textContent = value;
+                }
+            });
+        });
+    });
+});
+</script>
+
 {% endfor %}
 {% endblock %}
