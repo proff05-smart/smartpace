@@ -1,20 +1,91 @@
 {% extends 'base.html' %}
+{% load widget_tweaks %}
 {% block content %}
-<h2>👤 Your Profile</h2>
+<div class="container my-5">
+  <h2 class="mb-4"><i class="bi bi-person-circle"></i> Your Profile</h2>
 
-<div class="card shadow p-4">
-  <div class="row">
-    <div class="col-md-3 text-center">
-      <img src="{{ profile.avatar.url }}" class="img-thumbnail mb-3" width="150">
-    </div>
-    <div class="col-md-9">
-      <h4>{{ request.user.username }}</h4>
-      <p><strong>Name:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</p>
-      <p><strong>Email:</strong> {{ request.user.email }}</p>
-      <p><strong>Bio:</strong> {{ profile.bio }}</p>
-      <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary">✏️ Edit</a>
-      <a href="{% url 'delete_account' %}" class="btn btn-danger">❌ Delete Account</a>
-    </div>
+  <div class="card shadow-sm border-0 bg-body p-4">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      <div class="row g-4 align-items-center">
+
+        <!-- Avatar -->
+        <div class="col-12 col-md-3 text-center">
+          <label class="form-label fw-semibold d-block mb-2">Profile Picture</label>
+          <div class="position-relative d-inline-block mb-2">
+            <img id="profilePreview" src="{{ profile.avatar.url }}" class="rounded-circle border shadow-sm" width="150" height="150" style="object-fit: cover; cursor: pointer;">
+            <input type="file" name="avatar" id="id_avatar" class="form-control position-absolute top-0 start-0 opacity-0" onchange="previewImage(event)">
+          </div>
+          <small class="text-muted d-block">Click image to change</small>
+        </div>
+
+        <!-- Editable User Info -->
+        <div class="col-12 col-md-9">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Username</label>
+            {{ user_form.username|add_class:"form-control form-control-lg rounded" }}
+            {% if user_form.username.errors %}
+              <div class="text-danger small mt-1">{{ user_form.username.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">First Name</label>
+              {{ user_form.first_name|add_class:"form-control form-control-lg rounded" }}
+              {% if user_form.first_name.errors %}
+                <div class="text-danger small mt-1">{{ user_form.first_name.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Last Name</label>
+              {{ user_form.last_name|add_class:"form-control form-control-lg rounded" }}
+              {% if user_form.last_name.errors %}
+                <div class="text-danger small mt-1">{{ user_form.last_name.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3 mt-3">
+            <label class="form-label fw-semibold">Email</label>
+            {{ user_form.email|add_class:"form-control form-control-lg rounded" }}
+            {% if user_form.email.errors %}
+              <div class="text-danger small mt-1">{{ user_form.email.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Bio</label>
+            {{ profile_form.bio|add_class:"form-control form-control-lg rounded" }}
+            {% if profile_form.bio.errors %}
+              <div class="text-danger small mt-1">{{ profile_form.bio.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button type="submit" class="btn btn-success">
+              <i class="bi bi-save"></i> Save Changes
+            </button>
+            <a href="{% url 'delete_account' %}" class="btn btn-danger">
+              <i class="bi bi-trash"></i> Delete Account
+            </a>
+          </div>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
+
+<!-- Scripts -->
+<script>
+  // Image Preview
+  function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function(){
+      document.getElementById('profilePreview').src = reader.result;
+    };
+    reader.readAsDataURL(event.target.files[0]);
+  }
+</script>
 {% endblock %}
