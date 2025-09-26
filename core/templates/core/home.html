@@ -269,6 +269,11 @@
     </div>
     
 
+<div class="table-responsive">
+    {{ post.content|safe }}
+</div>
+
+
 {% endwith %}
 
 </div>
@@ -587,6 +592,12 @@ html, body {
 }
 
 
+.post-content table {
+  display: block;             
+  overflow-x: auto;           
+  width: max-content;         
+  max-width: 100%;            
+}
 
 </style>
 
