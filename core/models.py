@@ -1,30 +1,10 @@
-
 from django.db import models
-from django.contrib.auth.models import User
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+from django.contrib.auth.models import User, Group
 from django.utils import timezone
+from django.utils.timezone import now
 from django.urls import reverse
 from cloudinary.models import CloudinaryField
 from django_ckeditor_5.fields import CKEditor5Field
-from django.contrib.auth.models import Group
-from django.db import models 
-from django.contrib.auth.models import Group
-#from ckeditor_uploader.fields import CKEditor5Field
-from cloudinary.models import CloudinaryField
-from django.utils import timezone
-from django.db import models
-from django.contrib.auth.models import User
-from cloudinary.models import CloudinaryField
-from cloudinary.models import CloudinaryField
-from django.db import models
-from django.contrib.auth.models import User
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils.timezone import now
-from cloudinary.models import CloudinaryField
-from django.utils import timezone
-from django.db import models
 
 
 
@@ -32,6 +12,8 @@ from django.db import models
 
 
 
+
+# models.py
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(blank=True)
@@ -42,6 +24,9 @@ class Profile(models.Model):
         max_length=20,
         choices=[('Student', 'Student'), ('Teacher', 'Teacher'), ('Admin', 'Admin')],
         default='Student'
+    )
+    subscriptions = models.ManyToManyField(
+        'Category', blank=True, related_name='subscribed_users'
     )
 
     def __str__(self):

@@ -21,6 +21,13 @@ from core.views import (
 urlpatterns = [
 
     path("toggle-reaction/", views.toggle_reaction, name="toggle_reaction"),
+    path('subscriptions/', views.manage_subscriptions, name='manage_subscriptions'),
+    # path('feed/', views.personalized_feed, name='personalized_feed'),
+
+    path("toggle-reaction/", views.toggle_reaction, name="toggle_reaction"),
+    path("subscriptions/", views.manage_subscriptions, name="manage_subscriptions"),
+    path("feed/", views.personalized_feed, name="personalized_feed"),  # <— remove the #
+
 
 
     path('comment/add/<int:post_id>/', views.add_comment, name='add_comment'),

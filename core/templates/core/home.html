@@ -151,25 +151,55 @@
     {% for post in posts %}
             <div class="post-content">
 
-            <!-- 1️⃣ User Photo & Username -->
-            <div class="d-flex align-items-center mb-2">
-                <a href="{% url 'user_profile' post.author.username %}" class="d-flex align-items-center text-reset text-decoration-none">
-                    <img src="{% if post.author.profile.photo %}{{ post.author.profile.photo.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
-                    class="rounded-circle me-2 profile-photo" width="40" height="40" alt="{{ post.author.username }}">
+<!-- 1️⃣ User Photo & Username -->
+<div class="d-flex align-items-center mb-2">
+    <a href="{% url 'user_profile' post.author.username %}"
+       class="d-flex align-items-center text-reset text-decoration-none">
+        <img src="{% if post.author.profile.photo %}
+                     {{ post.author.profile.photo.url }}
+                 {% else %}
+                     {% static 'images/default-avatar.png' %}
+                 {% endif %}"
+             class="rounded-circle me-2 profile-photo"
+             width="40" height="40"
+             alt="{{ post.author.username }}">
 
-                    <strong>{{ post.author.username }}</strong>
-                </a>
-            </div>
-           
+        <strong>{{ post.author.username }}</strong>
+    </a>
+</div>
+
+{% if post.author.profile.role %}
+  {% with role=post.author.profile.role|lower %}
+    <span class="badge
+      {% if role == 'teacher' %}bg-primary
+      {% elif role == 'admin' %}bg-danger
+      {% elif role == 'student' %}bg-success
+      {% else %}bg-secondary
+      {% endif %}">
+      {{ post.author.profile.role }}
+    </span>
+  {% endwith %}
+{% endif %}
+<!-- 
+<span>• {{ post.created|date:"F j, Y" }}</span>
+{% if post.updated > post.created %}
+  <span>(Updated {{ post.updated|naturaltime }})</span>
+{% endif %}
+<span>• Category: <em>{{ post.category.name }}</em></span> -->
+
+
+
+
+
 
             <!-- 2️⃣ Post Title -->
             <h4 class="fw-bold mb-2">{{ post.title }}</h4>
 
             <!-- 3️⃣ Post Meta -->
             <p class="mb-2 text-muted small">
-                • {{ post.created|date:"M j, Y" }}
+                 {{ post.created|date:"M j, Y" }}
                 {% if post.updated > post.created %}
-                    • Updated {{ post.updated|naturaltime }}
+                    <!-- • Updated {{ post.updated|naturaltime }} -->
                 {% endif %}
                 • {{ post.category.name }}
             </p>
