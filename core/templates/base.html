@@ -65,6 +65,14 @@
     @media (max-width: 576px) {
       .comment { margin-left: calc(var(--indent, 0px) * 0.5); }
     }
+
+    body {
+  background: radial-gradient(circle at top, #0a0a0f 0%, #000 100%);
+}
+.card {
+  backdrop-filter: blur(8px);
+}
+
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -93,6 +101,25 @@
             <a class="nav-link" href="{% url 'quiz_history' %}"><i class="bi bi-journal-text"></i> Quiz History</a>
           </li>
         {% endif %}
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container">
+    <!-- <a class="navbar-brand" href="{% url 'home' %}">SMARTPACE</a> -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <!-- Other menu items -->
+        {% if user.is_authenticated %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'manage_subscriptions' %}">
+            Subscriptions
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
 
         <!-- Chat -->
         <li class="nav-item"><a class="nav-link" href="{% url 'chat:user_list' %}"><i class="bi bi-chat-dots"></i> Chat</a></li>

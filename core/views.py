@@ -51,6 +51,9 @@ from django.contrib.auth.decorators import login_required
 
 from .models import Notification
 
+
+from .forms import CategorySubscriptionForm
+
 DEFAULT_PHOTO_URL = "https://res.cloudinary.com/dwp0xtvyb/image/upload/v123456789/default_profile.png"
 
 
@@ -138,16 +141,31 @@ def post_likes_list(request, pk):
     users = post.likes.all()
     return render(request, 'post_likes_list.html', {'post': post, 'users': users})
 
+from django.core.paginator import Paginator
+from datetime import date
+import hashlib
+
 def homepage_view(request):
     settings = SiteSettings.objects.first()
     quiz_categories = QuizCategory.objects.all()
     categories = quiz_categories[:4]
 
-    all_posts = (
-        Post.objects.filter(status="published")
-        .prefetch_related("comments", "reactions")
-        .order_by("-created")
-    )
+    # ✨ Filter posts by the user's subscribed categories if logged in
+    if request.user.is_authenticated:
+        user_cats = request.user.profile.subscriptions.all()
+        all_posts = (
+            Post.objects.filter(status="published", category__in=user_cats)
+            .distinct()
+            .prefetch_related("comments", "reactions")
+            .order_by("-created")
+        )
+    else:
+        all_posts = (
+            Post.objects.filter(status="published")
+            .prefetch_related("comments", "reactions")
+            .order_by("-created")
+        )
+
     paginator = Paginator(all_posts, 25)
     page_number = request.GET.get("page")
     posts = paginator.get_page(page_number)
@@ -171,10 +189,9 @@ def homepage_view(request):
     all_users = User.objects.order_by("username")
     comment_form = CommentForm()
 
-    
     reaction_counts = {
         post.pk: {
-            key: post.reactions.filter(reaction_type=key).count()  
+            key: post.reactions.filter(reaction_type=key).count()
             for key, _ in Reaction.REACTION_CHOICES
         }
         for post in posts
@@ -197,6 +214,7 @@ def homepage_view(request):
             "comments_map": comments_map,
         },
     )
+
 
 
 @login_required
@@ -1427,3 +1445,28 @@ def toggle_reaction(request):
 
     return JsonResponse({"counts": counts})
 
+
+@login_required
+def manage_subscriptions(request):
+    profile = request.user.profile
+    if request.method == 'POST':
+        form = CategorySubscriptionForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            return redirect('personalized_feed')  # or wherever you want
+    else:
+        form = CategorySubscriptionForm(instance=profile)
+    return render(request, 'users/manage_subscriptions.html', {'form': form})
+
+
+
+def personalized_feed(request):
+    if request.user.is_authenticated:
+        user_cats = request.user.profile.subscriptions.all()
+        posts = Post.objects.filter(
+            status='published',
+            category__in=user_cats
+        ).distinct().order_by('-created')
+    else:
+        posts = Post.objects.filter(status='published')
+    return render(request, 'core/personalized_feed.html', {'posts': posts})

@@ -8,6 +8,12 @@ from django_ckeditor_5.widgets import CKEditor5Widget
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User, Group
+from .models import HomeworkSubmissionImage
+from django.forms import modelformset_factory
+from django import forms
+from django.contrib.auth.models import Group
+from django import forms
+from .models import Profile, Category
 
 # --- User Registration Form ---
 
@@ -91,7 +97,7 @@ class UserProfileForm(forms.ModelForm):
         }
 
 
-# --- Post Form ---
+
 class PostForm(forms.ModelForm):
     class Meta:
         model = Post
@@ -107,18 +113,18 @@ class PostForm(forms.ModelForm):
         }
 
 
-# --- PostMedia Form ---
+
 class PostMediaForm(forms.ModelForm):
     class Meta:
         model = PostMedia
         fields = ['image', 'video']
 
 
-# --- FormSet for PostMedia ---
+
 PostMediaFormSet = modelformset_factory(PostMedia, form=PostMediaForm, extra=5, can_delete=False)
 
 
-# --- Comment Form ---
+
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
@@ -132,7 +138,7 @@ class CommentForm(forms.ModelForm):
         }
 
 
-# --- PDF Upload Form ---
+
 class PDFUploadForm(forms.ModelForm):
     class Meta:
         model = PDFDocument
@@ -166,8 +172,7 @@ class HomeworkForm(forms.ModelForm):
 
 
 
-from .models import HomeworkSubmissionImage
-from django.forms import modelformset_factory
+
 
 class HomeworkSubmissionImageForm(forms.ModelForm):
     class Meta:
@@ -189,8 +194,7 @@ HomeworkSubmissionImageFormSet = modelformset_factory(
 )
 
 
-from django import forms
-from django.contrib.auth.models import Group
+
 
 class SelectGroupForm(forms.Form):
     group = forms.ModelChoiceField(
@@ -224,3 +228,13 @@ class TeacherMarkingForm(forms.ModelForm):
             raise forms.ValidationError("Mark must be between 0 and 100.")
         return mark
 
+class CategorySubscriptionForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['subscriptions']
+        widgets = {
+            'subscriptions': forms.CheckboxSelectMultiple
+        }
+        labels = {
+            'subscriptions': 'Choose the categories you want to follow'
+        }

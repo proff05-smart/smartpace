@@ -1,161 +1,81 @@
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quiz Leaderboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 
-  <style>
-    /* Light Mode */
-    body.light-mode {
-        background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
-        color: #000;
-    }
+<div class="container my-5">
+  <h1 class="text-center mb-4">🏆 Quiz Leaderboard</h1>
 
-    body.light-mode .leaderboard-container {
-        background: white;
-    }
-
-    body.light-mode .table {
-        background-color: white;
-        color: #000;
-    }
-
-    body.light-mode .table thead {
-        background-color: #cfe2ff;
-    }
-
-    /* Dark Mode */
-    body.dark-mode {
-        background-color: #121212;
-        color: #e0e0e0;
-    }
-
-    body.dark-mode .leaderboard-container {
-        background-color: #1e1e1e;
-    }
-
-    body.dark-mode .table {
-        background-color: #1c1c1c;
-        color: #ddd;
-    }
-
-    body.dark-mode .table thead {
-        background-color: #2c2c2c;
-    }
-
-    .leaderboard-container {
-        max-width: 720px;
-        margin: 0 auto;
-        border-radius: 1rem;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-        padding: 1.5rem;
-    }
-
-    h1 {
-        text-align: center;
-        margin-bottom: 1.5rem;
-        font-weight: 700;
-    }
-
-    .avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 2px solid #007bff;
-    }
-
-    .badge {
-        font-size: 1.1rem;
-        font-weight: 700;
-        padding: 0.3em 0.7em;
-        border-radius: 0.6rem;
-        color: white;
-    }
-
-    .badge.Gold { background-color: #FFD700; }
-    .badge.Silver { background-color: #C0C0C0; }
-    .badge.Bronze { background-color: #CD7F32; }
-    .badge.Top4 { background-color: #007bff; }
-    .badge.Top5 { background-color: #6f42c1; }
-
-    .no-badge {
-        color: #6c757d;
-        font-weight: 600;
-    }
-
-    @media (max-width: 576px) {
-        .avatar {
-            width: 36px;
-            height: 36px;
-        }
-        .leaderboard-container {
-            padding: 1rem;
-        }
-    }
-  </style>
-
-  <!-- Apply saved mode early to avoid flash -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const savedMode = localStorage.getItem('mode') || 'light';
-      document.body.classList.add(savedMode + '-mode');
-    });
-  </script>
-</head>
-<body>
-  <div class="leaderboard-container">
-    <h1>🏆 Quiz Leaderboard</h1>
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>User</th>
-                <th>Attempts</th>
-                <th>Score</th>
-                <th>Badge</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in leaderboard %}
-            <tr>
-                <td><strong>{{ user.rank }}</strong></td>
-                <td>
-                    <a href="{% url 'user_profile' user.username %}">
-                        <img src="{{ user.photo_url }}" alt="{{ user.username }} photo" class="avatar me-2" />
-                    </a>
-                    <a href="{% url 'user_profile' user.username %}" class="text-decoration-none">
-                        {{ user.username }}
-                    </a>
-                </td>
-                <td>{{ user.attempts }}</td>
-                <td>{{ user.total_score }}</td>
-                <td>
-                    {% if user.badge %}
-                        <span class="badge {{ user.badge }}" title="{{ user.badge }}">
-                            {{ user.emoji }} {{ user.badge }}
-                        </span>
-                    {% else %}
-                        <span class="no-badge">-</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center">No quiz attempts found.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle text-center">
+      <thead class="table-dark">
+        <tr>
+          <th scope="col">Rank</th>
+          <th scope="col">User</th>
+          <th scope="col">Attempts</th>
+          <th scope="col">Score</th>
+          <th scope="col">Badge</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in leaderboard %}
+        <tr>
+          <td><strong>{{ user.rank }}</strong></td>
+          <td class="text-start">
+            <a href="{% url 'user_profile' user.username %}" class="d-flex align-items-center text-decoration-none text-reset">
+              {% if user.photo_url %}
+                <img src="{{ user.photo_url }}" alt="{{ user.username }} photo" class="avatar me-2">
+              {% else %}
+                <img src="{% static 'img/avatar-placeholder.png' %}" alt="Default avatar" class="avatar me-2">
+              {% endif %}
+              <span class="text-truncate" style="max-width: 150px;">{{ user.username }}</span>
+            </a>
+          </td>
+          <td>{{ user.attempts }}</td>
+          <td>{{ user.total_score }}</td>
+          <td>
+            {% if user.badge %}
+              <span class="badge {{ user.badge }}" title="{{ user.badge }}">
+                {% if user.badge == 'Gold' %}🥇{% elif user.badge == 'Silver' %}🥈{% elif user.badge == 'Bronze' %}🥉{% endif %}
+                {{ user.badge }}
+              </span>
+            {% else %}
+              <span class="text-muted">–</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center">No quiz attempts found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
-
-    <div class="text-center mt-4">
-        <a href="{% url 'home' %}" class="btn btn-secondary">🏠 Back to Home</a>
-    </div>
   </div>
 
-  <img src="{% static 'img/avatar-placeholder.png' %}" alt="Avatar">
-</body>
-</html>
+  <div class="text-center mt-4">
+    <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">🏠 Back to Home</a>
+  </div>
+</div>
+
+<style>
+  /* Avatar size for desktop */
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #0d6efd;
+  }
+
+  /* Badges */
+  .badge.Gold   { background-color: #FFD700; color: #000; }
+  .badge.Silver { background-color: #C0C0C0; color: #000; }
+  .badge.Bronze { background-color: #CD7F32; color: #fff; }
+  .badge.Top4   { background-color: #0d6efd; color: #fff; }
+  .badge.Top5   { background-color: #6f42c1; color: #fff; }
+
+  /* Mobile adjustments */
+  @media (max-width: 576px) {
+    .avatar { width: 32px; height: 32px; }
+    .table td, .table th { font-size: 0.85rem; }
+    .text-truncate { max-width: 100px !important; }
+  }
+</style>
