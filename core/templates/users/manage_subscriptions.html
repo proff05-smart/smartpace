@@ -1,32 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- Inline style to make category/field labels pop in dark mode & scale on phones -->
 <style>
-  form label {
+  /* Label colors adapt to dark or light via body class */
+  body.dark-mode form label {
     color: #00e5ff;
     text-shadow: 0 0 6px #00e5ff;
-    font-weight: 600;
+  }
+  body.light-mode form label {
+    color: #0056b3;
+    text-shadow: none;
   }
 
-  /* Card responsiveness */
   @media (max-width: 576px) {
     .subscription-card {
-      max-width: 95% !important;   /* almost full width on phones */
-      margin: 0 10px;              /* small horizontal margin */
+      max-width: 95% !important;
+      margin: 0 10px;
     }
     .subscription-card .card-body {
-      padding: 1.25rem;            /* slightly tighter padding */
+      padding: 1.25rem;
     }
+  }
+
+  /* Optional subtle background differences */
+  body.dark-mode .subscription-card {
+    background: rgba(20, 20, 30, 0.85);
+    color: #f1f1f1;
+  }
+  body.light-mode .subscription-card {
+    background: #ffffff;
+    color: #212529;
   }
 </style>
 
-<div class="min-vh-100 d-flex justify-content-center align-items-center bg-dark text-light py-4 px-2">
-  <div class="card subscription-card shadow-lg border-0 rounded-4"
-       style="max-width: 450px; background: rgba(20, 20, 30, 0.85); width: 100%;">
+<div class="min-vh-100 d-flex justify-content-center align-items-center py-4 px-2">
+  <div class="card subscription-card shadow-lg border-0 rounded-4" style="max-width:450px; width:100%;">
     <div class="card-body p-4">
-      <h2 class="text-center mb-4 fw-bold"
-          style="color:#00e5ff; text-shadow:0 0 10px #00e5ff;">
+      <h2 class="text-center mb-4 fw-bold">
         <i class="bi bi-lightning-charge-fill"></i> Subscriptions
       </h2>
 
@@ -37,7 +47,7 @@
         </div>
         <button type="submit"
                 class="btn w-100 mt-3 fw-semibold text-uppercase"
-                style="background:linear-gradient(90deg,#00e5ff,#0080ff); color:#fff; box-shadow:0 0 15px #00e5ff;">
+                style="background:linear-gradient(90deg,#00e5ff,#0080ff); color:#fff;">
           Save
         </button>
       </form>

@@ -1,44 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
-
-<!-- Optional extra styling for subtle polish -->
 <style>
-  /* Classic card/list appearance that adapts to light/dark */
   .feed-list .list-group-item {
     transition: background-color 0.3s, color 0.3s;
     border-radius: 0.5rem;
     margin-bottom: .75rem;
   }
-  /* Hover effect with auto dark/light awareness */
   .feed-list .list-group-item:hover {
     background-color: rgba(0, 123, 255, 0.1);
   }
 </style>
 
-<div class="container py-4" data-bs-theme="auto"><!-- auto picks light or dark -->
-  <h1 class="mb-4 text-center text-primary-emphasis">Feeds</h1>
+<h1 class="mb-4 text-center text-primary-emphasis">Feeds</h1>
 
-  {% if posts %}
-    <div class="list-group feed-list">
-      {% for post in posts %}
-        <a href="{% url 'home' %}#post-{{ post.pk }}"
-           class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-start p-3">
-          <div>
-            <h5 class="mb-1 fw-semibold">{{ post.title }}</h5>
-            <p class="mb-1 text-body-secondary">{{ post.excerpt|truncatewords:25 }}</p>
-          </div>
-          <small class="text-muted mt-2 mt-md-0">Posted {{ post.created|date:"M d, Y" }}</small>
-        </a>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="alert alert-info text-center">
-      No posts yet from your subscribed categories.
-    </div>
-    <div class="text-center mt-3">
-      <a href="{% url 'home' %}" class="btn btn-outline-primary">Back to Home</a>
-    </div>
-  {% endif %}
-</div>
-
+{% if posts %}
+  <div class="list-group feed-list">
+    {% for post in posts %}
+      <a href="{% url 'home' %}#post-{{ post.pk }}"
+         class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-start p-3">
+        <div>
+          <h5 class="mb-1 fw-semibold">{{ post.title }}</h5>
+          <p class="mb-1 text-body-secondary">{{ post.excerpt|truncatewords:25 }}</p>
+        </div>
+        <small class="text-muted mt-2 mt-md-0">Posted {{ post.created|date:"M d, Y" }}</small>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-info text-center">
+    No posts yet from your subscribed categories.
+  </div>
+  <div class="text-center mt-3">
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">Back to Home</a>
+  </div>
+{% endif %}
 {% endblock %}
