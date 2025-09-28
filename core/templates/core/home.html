@@ -10,7 +10,8 @@
     <h1 class="display-4 fw-bold">{{ settings.site_name|default:"SMARTPACE" }}</h1>
     <p class="lead">{{ settings.tagline|default:"Empowering Minds Through Science" }}</p>
     <div class="text-end mb-3">
-      <button id="theme-toggle" class="btn btn-sm btn-outline-secondary" aria-label="Toggle dark mode">🌙</button>
+
+
     </div>
   </section>
 
@@ -339,28 +340,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const themeToggle = document.getElementById('theme-toggle');
-    const body = document.body;
-
-    // Load saved theme from localStorage
-    if (localStorage.getItem('theme') === 'dark') {
-        body.classList.add('dark-mode');
-    }
-
-    themeToggle.addEventListener('click', function() {
-        body.classList.toggle('dark-mode');
-
-        // Save current theme in localStorage
-        if (body.classList.contains('dark-mode')) {
-            localStorage.setItem('theme', 'dark');
-        } else {
-            localStorage.setItem('theme', 'light');
-        }
-    });
-});
-</script>
 
 
 
@@ -401,15 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<script>
-document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(btn => {
-  btn.addEventListener('click', function () {
-    const target = document.querySelector(this.dataset.bsTarget || this.getAttribute('href'));
-    this.textContent = target.classList.contains('show') ? 'Show Comments' : 'Hide Comments';
-  });
-});
-</script>
-
 
 <!-- ====== Inline CSS for Dark Mode & Styling ====== -->
 <style>
@@ -430,13 +400,10 @@ iframe {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
 
-  body.dark-mode {
-    background: #121212;
-    color: #eee;
-  }
+
 
   /* ===== Theme Toggle Button ===== */
-  #theme-toggle {
+ #theme-toggle {
     width: 35px;
     height: 36px;
     border-radius: 20px;
@@ -445,16 +412,13 @@ iframe {
     color: #666;
     font-size: 1.2rem;
     display: flex;
-    align-items: center;
+    align-items: center; 
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
   }
 
-  body.dark-mode #theme-toggle {
-    border-color: #ccc;
-    color: #ccc;
-  }
+
 
   /* ===== Section Styling (Gray) ===== */
 /* Light-mode grey background for the social bar */
@@ -497,11 +461,11 @@ body.dark-mode section.social-bar {
     transition: all 0.3s ease;
   }
 
-  body.dark-mode #live-clock {
+  /* body.dark-mode #live-clock {
     color: #060101;
     border-color: #888;
     background-color: rgba(255, 255, 255, 0.05);
-  }
+  } */
 
   /* ===== Buttons & Cards Global Improvements ===== */
   .btn, .card {
@@ -660,7 +624,13 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+
+
 </script>
+
+
+
 
 {% endfor %}
 {% endblock %}
