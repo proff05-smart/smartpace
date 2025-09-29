@@ -49,6 +49,7 @@
     </div>
   </div>
 </section>
+<body class="{% if dark_mode_enabled %}dark-mode{% endif %}">
 
 <!-- Clock Script -->
 <script>
@@ -76,20 +77,23 @@
   </div>
 
   <!-- Daily Quote -->
-  {% if daily_quote %}
-    <div class="daily-quote border rounded p-3 my-3 bg-light shadow-sm mx-auto" style="max-width:600px;">
-      <div class="fs-5 fst-italic text-center text-md-start">{{ daily_quote.quote|striptags }}</div>
-      <div class="mt-2 text-center text-md-start text-muted">
-        {% if daily_quote.author %}
-          {{ daily_quote.author }} — {{ daily_quote.created|date:"F j, Y" }}
-        {% else %}
-          {{ daily_quote.created|date:"F j, Y" }}
-        {% endif %}
-      </div>
+{% if daily_quote %}
+  <div class="daily-quote border rounded p-3 my-3 shadow-sm mx-auto bg-body">
+    <div class="fs-5 fst-italic text-center text-md-start text-body">
+      {{ daily_quote.quote|striptags }}
     </div>
-  {% else %}
-    <p>No daily quote available.</p>
-  {% endif %}
+    <div class="mt-2 text-center text-md-start text-secondary">
+      {% if daily_quote.author %}
+        {{ daily_quote.author }} — {{ daily_quote.created|date:"F j, Y" }}
+      {% else %}
+        {{ daily_quote.created|date:"F j, Y" }}
+      {% endif %}
+    </div>
+  </div>
+{% else %}
+  <p>No daily quote available.</p>
+{% endif %}
+
 
   <!-- Calendar -->
   <div class="col-12 col-md-6 mx-auto">
@@ -119,33 +123,55 @@
     </div>
   </div>
 
-  <!-- Quiz Categories -->
-  {% if quiz_categories %}
-    <section class="my-5">
-      <h3 class="text-center mb-4">🧠 Quiz Categories</h3>
-      <ul class="nav nav-tabs justify-content-center mb-3">
-        {% for category in quiz_categories %}
-          <li class="nav-item">
-            <button class="nav-link {% if forloop.first %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab{{ category.id }}">
-              {{ category.name }}
-            </button>
-          </li>
-        {% endfor %}
-      </ul>
-      <div class="tab-content">
-        {% for category in quiz_categories %}
-          <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="tab{{ category.id }}">
-            <div class="text-center bg-light rounded shadow p-4">
-              <h5>{{ category.name }}</h5>
-              <a href="{% url 'start_quiz' category.id %}" class="btn btn-success mt-2">
-                Start Quiz ({{ category.quiz_set.count }})
-              </a>
-            </div>
+<!-- Quiz Categories -->
+{% if quiz_categories %}
+<section class="my-5">
+  <h3 class="text-center mb-5 fw-bold">🧠 Quiz Categories</h3>
+
+  <!-- Tabs -->
+  <ul class="nav nav-pills justify-content-center mb-4" role="tablist">
+    {% for category in quiz_categories %}
+      <li class="nav-item mx-1" role="presentation">
+        <button class="nav-link {% if forloop.first %}active{% endif %} rounded-pill px-4 py-2"
+                data-bs-toggle="pill"
+                data-bs-target="#tab{{ category.id }}"
+                type="button"
+                role="tab"
+                aria-controls="tab{{ category.id }}"
+                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+          {{ category.name }}
+        </button>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    {% for category in quiz_categories %}
+      <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="tab{{ category.id }}" role="tabpanel">
+        <div class="d-flex justify-content-center">
+          <div class="card shadow-sm rounded-4 p-4 text-center border-0" style="max-width: 320px; transition: transform 0.2s;">
+            <h5 class="fw-semibold">{{ category.name }}</h5>
+            <p class="text-muted mb-3">{{ category.quiz_set.count }} quizzes available</p>
+            <a href="{% url 'start_quiz' category.id %}" class="btn btn-success btn-lg rounded-pill w-100">
+              Start Quiz
+            </a>
           </div>
-        {% endfor %}
+        </div>
       </div>
-    </section>
-  {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Optional: Add hover effect for card -->
+<style>
+  .tab-pane .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+</style>
+{% endif %}
+
 
 <!-- Single Post -->
 <section class="posts-edge-to-edge">
@@ -193,40 +219,40 @@
 
 
 
-            <!-- 2️⃣ Post Title -->
-            <h4 class="fw-bold mb-2">{{ post.title }}</h4>
+          <!-- 2️⃣ Post Title -->
+<h4 class="fw-bold mb-2 post-title">{{ post.title }}</h4>
+<p class="mb-2 small post-meta">
+    {{ post.created|date:"M j, Y" }} • {{ post.category.name }}
+</p>
+<p class="mb-3 post-content-text">
+    {{ post.excerpt|default:post.content|safe }}
+</p>
 
-            <!-- 3️⃣ Post Meta -->
-            <p class="mb-2 text-muted small">
-                 {{ post.created|date:"M j, Y" }}
-                {% if post.updated > post.created %}
-                    <!-- • Updated {{ post.updated|naturaltime }} -->
-                {% endif %}
-                • {{ post.category.name }}
-            </p>
+<!-- 4️⃣ Media (Image/Video/YouTube) -->
+{% if post.image or post.get_first_image_url %}
+  <img src="{% if post.image %}{{ post.image.url }}{% else %}{{ post.get_first_image_url }}{% endif %}"
+       alt="{{ post.title|escape }}" class="w-100 d-block mb-3">
+{% endif %}
+{% if post.video %}
+  <video class="w-100 d-block mb-3" controls>
+    <source src="{{ post.video.url }}" type="video/mp4">
+  </video>
+{% endif %}
+{% if post.youtube_url|is_youtube_link %}
+  <div class="ratio ratio-16x9 mb-3">
+    <iframe src="{{ post.youtube_url|youtube_embed }}"
+            class="w-100 h-100 border-0"
+            allowfullscreen></iframe>
+  </div>
+{% endif %}
 
-            <!-- 4️⃣ Media (Image/Video/YouTube) -->
-            {% if post.image or post.get_first_image_url %}
-              <img src="{% if post.image %}{{ post.image.url }}{% else %}{{ post.get_first_image_url }}{% endif %}"
-                   alt="{{ post.title|escape }}" class="w-100 d-block mb-3">
-            {% endif %}
-            {% if post.video %}
-              <video class="w-100 d-block mb-3" controls>
-                <source src="{{ post.video.url }}" type="video/mp4">
-              </video>
-            {% endif %}
-            {% if post.youtube_url|is_youtube_link %}
-              <div class="ratio ratio-16x9 mb-3">
-                <iframe src="{{ post.youtube_url|youtube_embed }}"
-                        class="w-100 h-100 border-0"
-                        allowfullscreen></iframe>
-              </div>
-            {% endif %}
+<p class="mb-3 post-content-text">
+    {{ post.excerpt|default:post.content|safe }}
+</p>
+{% if user == post.author %}
 
 
- 
-<p class="mb-3">{{ post.excerpt|default:post.content|safe }}</p>
-            {% if user == post.author %}
+
                 <div class="mb-2">
                     <a href="{% url 'edit_post' post.pk %}" class="text-warning me-3">✏️ Edit</a>
                     <a href="{% url 'delete_post' post.pk %}" class="text-danger"
@@ -383,6 +409,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ====== Inline CSS for Dark Mode & Styling ====== -->
 <style>
+
+/* Light mode defaults */
+.post-title { color: #212529; }          /* dark text for light mode */
+.post-meta { color: #6c757d; }           /* gray text for meta */
+.post-content-text { color: #333; }      /* main content color */
+
+/* Dark mode overrides */
+body.dark-mode .post-title { color: #ffffff; }
+body.dark-mode .post-meta { color: #100e0e; }
+body.dark-mode .post-content-text { color: #e0e0e0; }
+
+
+
+body.dark-mode .post-title { color: #0d0b0b; }
+body.dark-mode .post-meta { color: #151212; }
+body.dark-mode .post-content-text { color: #e0e0e0; }
+
 
   /* Ensure all media scale on small screens */
 video,
