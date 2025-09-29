@@ -19,6 +19,48 @@
 
   <!-- Custom Styles -->
   <style>
+
+/* ===== Dark Mode for Posts ===== */
+body.dark-mode .post-content {
+    background-color: #121212;   /* dark background for the post */
+    color: #e0e0e0;             /* light text color */
+}
+
+/* Post title */
+body.dark-mode .post-content h4,
+body.dark-mode .post-content h5 {
+    color: #ffffff;
+}
+
+/* Post meta info (date, category) */
+body.dark-mode .post-content p.text-secondary,
+body.dark-mode .post-content span.text-secondary {
+    color: #b0b0b0;  /* muted light gray */
+}
+
+/* Post excerpt/content */
+body.dark-mode .post-content p.text-body {
+    color: #e0e0e0;
+}
+
+/* Post cards / media container */
+body.dark-mode .post-content .card,
+body.dark-mode .post-content .accordion,
+body.dark-mode .post-content .daily-quote {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border-color: #333;
+}
+
+/* Links inside posts */
+body.dark-mode .post-content a {
+    color: #bb86fc;  /* nice purple accent */
+}
+body.dark-mode .post-content a:hover {
+    color: #e0e0e0;
+}
+
+
     html, body {
       max-width: 100%;
       overflow-x: hidden;

@@ -1,216 +1,191 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block extra_css %}
-<style>
-/* ---------- Global ---------- */
-body {
-  background: #f5f7fa;
-  color: #2c3e50;
-  font-family: 'Inter', sans-serif;
-}
-
-/* ---------- Hero / Profile Header ---------- */
-.profile-hero {
-  background: linear-gradient(135deg, #6f42c1, #6610f2);
-  color: #fff;
-  padding: 4rem 2rem;
-  text-align: center;
-  border-radius: 0 0 2rem 2rem;
-}
-.profile-hero img {
-  width: 150px;
-  height: 150px;
-  object-fit: cover;
-  border-radius: 50%;
-  border: 5px solid #fff;
-  box-shadow: 0 6px 20px rgba(0,0,0,.25);
-}
-.profile-hero h1 {
-  margin-top: 1rem;
-  font-weight: 700;
-  font-size: 2rem;
-}
-
-/* ---------- Info Card ---------- */
-.info-card {
-  margin-top: -3rem;
-  background: #fff;
-  border-radius: 1rem;
-  box-shadow: 0 8px 20px rgba(0,0,0,.08);
-  padding: 2rem;
-}
-.info-card table th {
-  width: 30%;
-  color: #6c757d;
-}
-
-/* ---------- Section Headings ---------- */
-.section-title {
-  font-weight: 600;
-  margin: 3rem 0 1rem;
-  color: #34495e;
-}
-
-/* ---------- Posts Grid ---------- */
-.post-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-}
-.post-card {
-  background: #fff;
-  border-radius: 1rem;
-  box-shadow: 0 6px 18px rgba(0,0,0,.06);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  transition: transform .3s;
-}
-.post-card:hover {
-  transform: translateY(-4px);
-}
-.post-card h5 {
-  font-weight: 600;
-}
-
-/* ---------- Quiz Table ---------- */
-.quiz-table .progress {
-  height: 16px;
-  border-radius: 8px;
-}
-.progress-success { background: linear-gradient(90deg,#28a745,#85e085);}
-.progress-warning { background: linear-gradient(90deg,#ffc107,#ffe680); color:#000;}
-.progress-danger  { background: linear-gradient(90deg,#dc3545,#ff6b6b); }
-
-/* ---------- Buttons ---------- */
-.btn-outline-primary {
-  border-radius: 50px;
-  padding: 0.4rem 1rem;
-}
-</style>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.progress-bar').forEach(bar => {
-    const width = bar.dataset.width;
-    const type = bar.dataset.type;
-    setTimeout(() => {
-      bar.style.width = width + '%';
-      bar.classList.add(type);
-      bar.textContent = width + '%';
-    }, 300);
-  });
-});
-</script>
-{% endblock %}
-
 {% block content %}
-<div class="profile-hero">
+
+<!-- Profile Section -->
+<div class="profile-section" style="max-width: 980px; margin: -60px auto 16px; display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 16px;">
+
+  <!-- Profile Photo -->
   {% if profile_user.profile.photo %}
-    <img src="{{ profile_user.profile.photo.url }}" alt="{{ profile_user.username }}">
+    <img src="{{ profile_user.profile.photo.url }}" alt="{{ profile_user.username }}" 
+         class="profile-photo" 
+         style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; object-fit: cover; box-shadow: 0 3px 6px rgba(0,0,0,.2); cursor: pointer;" 
+         data-bs-toggle="modal" 
+         data-bs-target="#photoModal">
   {% else %}
-    <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar">
+    <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" 
+         class="profile-photo" 
+         style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; object-fit: cover; box-shadow: 0 3px 6px rgba(0,0,0,.2); cursor: pointer;" 
+         data-bs-toggle="modal" 
+         data-bs-target="#photoModal">
   {% endif %}
-  <h1>{{ profile_user.username }}</h1>
+
+  <!-- Profile Details -->
+<div class="profile-details" style="flex: 1 1 300px;">
+  <h1 class="mb-1" style="font-size: 24px;">{{ profile_user.username }}</h1>
+  
   {% if profile_user.profile.role %}
-    <span class="badge bg-light text-dark mt-2 px-3 py-2">{{ profile_user.profile.role }}</span>
+    <div class="profile-role text-muted mb-2" style="font-size: 14px;">{{ profile_user.profile.role }}</div>
   {% endif %}
-</div>
-
-<div class="container">
-  <!-- Info Card -->
-  <div class="info-card">
-    <table class="table mb-0">
-      <tbody>
-        <tr><th>Full Name</th><td>{{ profile_user.first_name }} {{ profile_user.last_name }}</td></tr>
-        <tr><th>Email</th><td>{{ profile_user.email }}</td></tr>
-        <tr><th>Date Joined</th><td>{{ profile_user.date_joined|date:"F j, Y" }}</td></tr>
-      </tbody>
-    </table>
-
-    <hr>
-    <h5>Bio</h5>
+  
+  <!-- Bio with Read More -->
+  <div class="profile-bio-container mb-2" style="font-size:14px; color:#1c1e21;">
     {% if profile_user.profile.bio %}
-      {% with profile_user.profile.bio|linebreaksbr as bio_html %}
-        {% with bio_html|safe as full_bio %}
-          {% if full_bio|length > 300 %}
-            <p id="short-bio">{{ full_bio|slice:":300" }}...</p>
-            <div class="collapse" id="fullBio"><p>{{ full_bio|safe }}</p></div>
-            <button class="btn btn-link p-0" data-bs-toggle="collapse" data-bs-target="#fullBio">
-              Read more
-            </button>
-          {% else %}
-            <p>{{ full_bio|safe }}</p>
-          {% endif %}
-        {% endwith %}
-      {% endwith %}
+      <p id="bio-preview">{{ profile_user.profile.bio|truncatechars:200 }}{% if profile_user.profile.bio|length > 200 %}...{% endif %}</p>
+      {% if profile_user.profile.bio|length > 200 %}
+        <a href="javascript:void(0);" id="toggle-bio" class="text-primary fw-semibold" style="font-size:14px;">Read More</a>
+      {% endif %}
     {% else %}
       <p class="text-muted">No bio available.</p>
     {% endif %}
-
-    <div class="mt-3">
-      {% if user == profile_user %}
-        <a href="{% url 'profile_edit' %}" class="btn btn-outline-primary btn-sm me-2">Edit Profile</a>
-      {% endif %}
-      <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm">← Back to Home</a>
-    </div>
   </div>
 
-  <!-- Blog Posts -->
-  <h3 class="section-title">📝 Blog Posts</h3>
+  <!-- Buttons -->
+  <div class="profile-buttons mt-2">
+    {% if user == profile_user %}
+      <a href="{% url 'profile_edit' %}" class="btn btn-outline-primary btn-sm me-2">Edit Profile</a>
+    {% endif %}
+    <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm">← Back to Home</a>
+  </div>
+</div>
+
+<!-- JS for Read More toggle -->
+<script>
+  const toggleBtn = document.getElementById('toggle-bio');
+  const bioPreview = document.getElementById('bio-preview');
+  {% if profile_user.profile.bio %}
+    const fullBio = `{{ profile_user.profile.bio|escapejs }}`;
+  {% endif %}
+
+  if(toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      if(toggleBtn.innerText === "Read More") {
+        bioPreview.innerText = fullBio;
+        toggleBtn.innerText = "Show Less";
+      } else {
+        bioPreview.innerText = fullBio.substring(0,200) + "...";
+        toggleBtn.innerText = "Read More";
+      }
+    });
+  }
+</script>
+
+
+<!-- Profile Photo Modal -->
+<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background: transparent; border: none;">
+      <div class="modal-body p-0">
+        {% if profile_user.profile.photo %}
+          <img src="{{ profile_user.profile.photo.url }}" 
+               alt="{{ profile_user.username }}" 
+               style="width: 100%; height: auto; border-radius: 8px; object-fit: cover;">
+        {% else %}
+          <img src="{% static 'images/default-avatar.png' %}" 
+               alt="{{ profile_user.username }}" 
+               style="width: 100%; height: auto; border-radius: 8px; object-fit: cover;">
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Content Section -->
+<div class="content-section" style="max-width: 980px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; gap: 16px; padding: 0 16px;">
+  <!-- Left Column: Intro -->
+  <div class="left-column" style="flex: 1 1 280px; background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); padding: 16px;">
+    <h5>Know me</h5>
+    <table class="table table-borderless mb-0" style="width: 100%;">
+      <tbody>
+        <tr><th style="width:35%; font-weight:600; color:#65676b;">Full Name</th><td>{{ profile_user.first_name }} {{ profile_user.last_name }}</td></tr>
+        <tr><th style="width:35%; font-weight:600; color:#65676b;">Email</th><td>{{ profile_user.email }}</td></tr>
+        <tr><th style="width:35%; font-weight:600; color:#65676b;">Joined</th><td>{{ profile_user.date_joined|date:"F j, Y" }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Right Column: Posts & Quiz -->
+
+<div class="right-column col-12 col-lg-8">
+  <h3 class="section-title mb-3 text-dark fw-bold">Posts</h3>
+
   {% if user_posts %}
-    <div class="post-grid">
+    <div class="row g-3">
       {% for post in user_posts %}
-        <div class="post-card">
-          <h5>{{ post.title }}</h5>
-          <p class="flex-grow-1">{{ post.excerpt|truncatewords:30 }}</p>
-          <a href="{% url 'post_detail' post.pk %}" class="btn btn-primary btn-sm mt-2">Read More</a>
+        <div class="col-12 col-sm-6 col-md-4">
+          <div class="card shadow-sm h-100 border-0 hover-shadow">
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title text-primary fw-semibold">{{ post.title }}</h5>
+              <p class="card-text text-truncate">{{ post.excerpt|truncatewords:30 }}</p>
+              <a href="{% url 'post_detail' post.pk %}" class="mt-auto text-decoration-none text-primary fw-semibold">Open </a>
+            </div>
+          </div>
         </div>
       {% endfor %}
     </div>
   {% else %}
-    <p class="text-muted">This user has not published any posts yet.</p>
-  {% endif %}
-
-  <!-- Quiz History -->
-  <h3 class="section-title">🧠 Quiz History</h3>
-  {% if quiz_attempts %}
-    <div class="table-responsive quiz-table">
-      <table class="table table-hover align-middle">
-        <thead class="table-light">
-          <tr>
-            <th>Category</th>
-            <th>Score</th>
-            <th>Total Qs</th>
-            <th>Percentage</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for attempt in quiz_attempts %}
-            <tr>
-              <td>{% if attempt.quiz and attempt.quiz.category %}{{ attempt.quiz.category.name }}{% else %}{{ attempt.category.name }}{% endif %}</td>
-              <td>{{ attempt.score }}</td>
-              <td>{{ attempt.total_questions }}</td>
-              <td>
-                <div class="progress">
-                  <div class="progress-bar" role="progressbar" data-width="{{ attempt.percentage }}"
-                       data-type="{% if attempt.percentage >= 80 %}progress-success{% elif attempt.percentage >= 50 %}progress-warning{% else %}progress-danger{% endif %}">
-                    0%
-                  </div>
-                </div>
-              </td>
-              <td>{{ attempt.date_taken|date:"M d, Y H:i" }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% else %}
-    <p class="text-muted">No quiz attempts found.</p>
+    <p class="text-muted">No posts yet.</p>
   {% endif %}
 </div>
+
+<!-- Optional: Add custom CSS for hover effect -->
+<style>
+  .hover-shadow:hover {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
+    transform: translateY(-2px);
+    transition: all 0.2s ease-in-out;
+  }
+  .card-text.text-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* limit to 3 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
+
+
+
+    <h3 class="section-title mt-4" style="font-size: 20px; font-weight:600; margin-bottom:12px; color:#1c1e21;">Quiz History</h3>
+    {% if quiz_attempts %}
+      <div class="table-responsive quiz-table">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Category</th>
+              <th>Score</th>
+              <th>Total Qs</th>
+              <th>Percentage</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for attempt in quiz_attempts %}
+              <tr>
+                <td>{% if attempt.quiz and attempt.quiz.category %}{{ attempt.quiz.category.name }}{% else %}{{ attempt.category.name }}{% endif %}</td>
+                <td>{{ attempt.score }}</td>
+                <td>{{ attempt.total_questions }}</td>
+                <td>
+                  <div class="progress" style="height:14px; border-radius:7px; background:#ccd0d5;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ attempt.percentage }}%; height:100%; background: {% if attempt.percentage >= 80 %}#42b72a{% elif attempt.percentage >= 50 %}#f7b928{% else %}#fa3e3e{% endif %};">
+                      {{ attempt.percentage }}%
+                    </div>
+                  </div>
+                </td>
+                <td>{{ attempt.date_taken|date:"M d, Y H:i" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted">No quiz attempts found.</p>
+    {% endif %}
+  </div>
+</div>
+
 {% endblock %}
+
+<!-- Bootstrap JS (if not already included in base.html) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
